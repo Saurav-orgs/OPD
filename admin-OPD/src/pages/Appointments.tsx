@@ -1,14 +1,44 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { appointmentsApi, doctorsApi } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../components/Toast';
-import { Badge, Empty, Loading, Modal } from '../components/ui';
+import { ActionMenuDropdown, Badge, Empty, Loading, Modal } from '../components/ui';
 
 export default function Appointments() {
   const { user, can } = useAuth();
-  const [filters, setFilters] = useState<{ doctorId?: string; date?: string; status?: string }>({});
-  const [selected, setSelected] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const paramId = searchParams.get('selected') || (location.state as { selectedId?: string } | null)?.selectedId || null;
+
+  const [searchInput, setSearchInput] = useState('');
+  const [filters, setFilters] = useState<{ doctorId?: string; date?: string; status?: string; search?: string }>({});
+  const [selected, setSelected] = useState<string | null>(paramId);
+
+  useEffect(() => {
+    if (paramId) {
+      setSelected(paramId);
+    }
+  }, [paramId]);
+
+  const handleCloseModal = () => {
+    setSelected(null);
+    if (searchParams.has('selected')) {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('selected');
+      setSearchParams(nextParams, { replace: true });
+    }
+  };
+
+  // Debounce the free-text search so we don't refetch on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const q = searchInput.trim();
+      setFilters((f) => ({ ...f, search: q || undefined }));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   // Only admins pick a doctor; doctors are auto-scoped server-side.
   const doctorsQ = useQuery({
@@ -30,10 +60,18 @@ export default function Appointments() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="row" style={{ flexWrap: 'wrap' }}>
+          <input
+            className="input"
+            type="search"
+            placeholder="Search name or phone…"
+            style={{ width: 240 }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
           {doctorsQ.data && (
             <select
               className="select"
-              style={{ width: 220 }}
+              style={{ width: 200 }}
               value={filters.doctorId ?? ''}
               onChange={(e) => setFilters((f) => ({ ...f, doctorId: e.target.value || undefined }))}
             >
@@ -46,13 +84,13 @@ export default function Appointments() {
           <input
             className="input"
             type="date"
-            style={{ width: 170 }}
+            style={{ width: 160 }}
             value={filters.date ?? ''}
             onChange={(e) => setFilters((f) => ({ ...f, date: e.target.value || undefined }))}
           />
           <select
             className="select"
-            style={{ width: 160 }}
+            style={{ width: 150 }}
             value={filters.status ?? ''}
             onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value || undefined }))}
           >
@@ -60,7 +98,15 @@ export default function Appointments() {
             <option value="confirmed">Confirmed</option>
             <option value="rejected">Rejected</option>
           </select>
-          <button className="btn btn-sm" onClick={() => setFilters({})}>Clear</button>
+          <button
+            className="btn btn-sm"
+            onClick={() => {
+              setSearchInput('');
+              setFilters({});
+            }}
+          >
+            Clear
+          </button>
         </div>
       </div>
 
@@ -79,12 +125,16 @@ export default function Appointments() {
                 <th>Doctor</th>
                 <th>Payment</th>
                 <th>Consultation</th>
-                <th></th>
+                <th style={{ width: 1, textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {listQ.data.map((a) => (
-                <tr key={a.id}>
+                <tr
+                  key={a.id}
+                  className="clickable-row"
+                  onClick={() => setSelected(a.id)}
+                >
                   <td>{a.appointment_date}</td>
                   <td>{a.start_time?.slice(0, 5)}</td>
                   <td>
@@ -94,8 +144,8 @@ export default function Appointments() {
                   <td className="muted">{a.doctor?.name ?? '—'}</td>
                   <td><Badge value={a.payment_status} /></td>
                   <td><Badge value={a.consultation_status} /></td>
-                  <td>
-                    <button className="btn btn-sm" onClick={() => setSelected(a.id)}>View</button>
+                  <td style={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                    <AppointmentActionMenu onView={() => setSelected(a.id)} />
                   </td>
                 </tr>
               ))}
@@ -104,8 +154,41 @@ export default function Appointments() {
         </div>
       )}
 
-      {selected && <DetailModal id={selected} onClose={() => setSelected(null)} />}
+      {selected && <DetailModal id={selected} onClose={handleCloseModal} />}
     </>
+  );
+}
+
+function AppointmentActionMenu({ onView }: { onView: () => void }) {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <div className="action-menu-container">
+      <button
+        ref={btnRef}
+        type="button"
+        className="btn-dots"
+        aria-label="Actions"
+        onClick={() => setOpen((v) => !v)}
+      >
+        ⋮
+      </button>
+      {open && (
+        <ActionMenuDropdown btnRef={btnRef} onClose={() => setOpen(false)}>
+          <button
+            type="button"
+            className="action-menu-item"
+            onClick={() => {
+              setOpen(false);
+              onView();
+            }}
+          >
+            View details
+          </button>
+        </ActionMenuDropdown>
+      )}
+    </div>
   );
 }
 
@@ -149,6 +232,7 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
             <Detail label="Doctor" value={a.doctor?.name ?? '—'} />
             {a.patient_address && <Detail label="Address" value={a.patient_address} />}
             {a.description && <Detail label="Reason" value={a.description} />}
+            {a.source && <Detail label="Booking Source" value={a.source === 'app' ? 'Mobile App' : 'Web'} />}
             <div className="row">
               <Badge value={a.status} />
               <Badge value={a.payment_status} />

@@ -15,6 +15,58 @@ export default function Layout() {
 
   const items = NAV.filter((n) => can(n.module, 'read'));
 
+  const getFormattedRole = (type?: string) => {
+    if (!type) return '';
+    switch (type) {
+      case 'super_admin':
+        return 'Super Admin';
+      case 'admin':
+        return 'Admin';
+      case 'doctor':
+        return 'Doctor';
+      default:
+        return type.replace(/_/g, ' ');
+    }
+  };
+
+  const getRoleIcon = (type?: string) => {
+    switch (type) {
+      case 'super_admin':
+        return '';
+      case 'doctor':
+        return '';
+      default:
+        return '';
+    }
+  };
+
+  const renderUserInfo = () => {
+    if (!user) return null;
+    const roleLabel = getFormattedRole(user.type);
+    const nameLabel = user.name?.trim() || '';
+    const icon = getRoleIcon(user.type);
+
+    const isDuplicate =
+      !nameLabel ||
+      nameLabel.toLowerCase().replace(/[\s_]/g, '') ===
+      roleLabel.toLowerCase().replace(/[\s_]/g, '');
+
+    return (
+      <div className="user-profile-badge">
+        <span className="user-icon" aria-hidden>{icon}</span>
+        {isDuplicate ? (
+          <span className="user-role-title">{roleLabel}</span>
+        ) : (
+          <span className="user-role-title">
+            <span className="user-name">{nameLabel}</span>
+            <span className="user-sep">·</span>
+            <span className="user-role">{roleLabel}</span>
+          </span>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="app-shell">
       {drawerOpen && (
@@ -45,7 +97,7 @@ export default function Layout() {
         )}
         <div className="spacer" />
         <button
-          className="btn btn-ghost"
+          className="btn btn-logout"
           onClick={() => {
             logout();
             navigate('/login');
@@ -65,7 +117,7 @@ export default function Layout() {
             ☰
           </button>
           <div className="who">
-            {user?.name} · <span className="muted">{user?.type.replace('_', ' ')}</span>
+            {renderUserInfo()}
           </div>
         </header>
         <main className="content">
