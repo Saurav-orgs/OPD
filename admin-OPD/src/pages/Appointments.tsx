@@ -30,6 +30,15 @@ export default function Appointments() {
     }
   };
 
+  // Debounce the free-text search so we don't refetch on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const q = searchInput.trim();
+      setFilters((f) => ({ ...f, search: q || undefined }));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
   // Only admins pick a doctor; doctors are auto-scoped server-side.
   const doctorsQ = useQuery({
     queryKey: ['doctors'],
@@ -50,6 +59,14 @@ export default function Appointments() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="row" style={{ flexWrap: 'wrap' }}>
+          <input
+            className="input"
+            type="search"
+            placeholder="Search name or phone…"
+            style={{ width: 240 }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
           {doctorsQ.data && (
             <select
               className="select"
@@ -80,7 +97,15 @@ export default function Appointments() {
             <option value="confirmed">Confirmed</option>
             <option value="rejected">Rejected</option>
           </select>
-          <button className="btn btn-sm" onClick={() => setFilters({})}>Clear</button>
+          <button
+            className="btn btn-sm"
+            onClick={() => {
+              setSearchInput('');
+              setFilters({});
+            }}
+          >
+            Clear
+          </button>
         </div>
       </div>
 

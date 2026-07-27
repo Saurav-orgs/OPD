@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme.dart';
 import 'screens/doctor_list_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Load runtime config (API base URL). Optional so a missing .env falls back
+  // to AppConfig's per-platform defaults instead of crashing at startup.
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // No .env bundled — AppConfig will use its built-in defaults.
+  }
   runApp(const OpdApp());
 }
 

@@ -37,4 +37,11 @@ export class ListAppointmentsQueryDto {
   @ApiPropertyOptional()
   @IsOptional()
   status?: string;
+
+  @ApiPropertyOptional({
+    description: 'Free-text match on patient name or mobile number.',
+    example: '9876543210',
+  })
+  @IsOptional()
+  search?: string;
 }
