@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { rolesApi } from '../api/endpoints';
 import type { Permission, Role } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../components/Toast';
-import { Empty, Field, Loading, Modal } from '../components/ui';
+import { ActionMenuDropdown, Empty, Field, Loading, Modal } from '../components/ui';
 
 const ACTIONS = ['create', 'read', 'update', 'delete'] as const;
 
@@ -13,6 +13,7 @@ export default function Roles() {
   const toast = useToast();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<Role | 'new' | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Role | null>(null);
 
   const rolesQ = useQuery({ queryKey: ['roles'], queryFn: rolesApi.list });
 
@@ -39,7 +40,7 @@ export default function Roles() {
         <div className="table-wrap">
           <table>
             <thead>
-              <tr><th>Name</th><th>Description</th><th>Permissions</th><th></th></tr>
+              <tr><th>Name</th><th>Description</th><th>Permissions</th><th style={{ width: 1, textAlign: 'right' }}>Actions</th></tr>
             </thead>
             <tbody>
               {rolesQ.data.map((r) => (
@@ -49,15 +50,15 @@ export default function Roles() {
                   </td>
                   <td className="muted">{r.description || '—'}</td>
                   <td className="muted">{r.permissions?.length ?? 0} granted</td>
-                  <td>
-                    <div className="row" style={{ justifyContent: 'flex-end' }}>
-                      {can('roles', 'update') && !r.is_system && (
-                        <button className="btn btn-sm" onClick={() => setEditing(r)}>Edit</button>
-                      )}
-                      {can('roles', 'delete') && !r.is_system && (
-                        <button className="btn btn-sm btn-danger" onClick={() => remove.mutate(r.id)}>Delete</button>
-                      )}
-                    </div>
+                  <td style={{ textAlign: 'right' }}>
+                    <RoleActionMenu
+                      role={r}
+                      canUpdate={can('roles', 'update') && !r.is_system}
+                      canDelete={can('roles', 'delete') && !r.is_system}
+                      onEdit={() => setEditing(r)}
+                      onDelete={() => setConfirmDelete(r)}
+                      isPending={remove.isPending}
+                    />
                   </td>
                 </tr>
               ))}
@@ -66,8 +67,92 @@ export default function Roles() {
         </div>
       )}
 
+      {confirmDelete && (
+        <Modal title="Delete role" onClose={() => setConfirmDelete(null)}>
+          <p style={{ margin: '12px 0 20px', color: 'var(--text)' }}>
+            Are you sure you want to delete role <strong>{confirmDelete.name}</strong>?
+          </p>
+          <div className="modal-actions">
+            <button className="btn" onClick={() => setConfirmDelete(null)}>No</button>
+            <button
+              className="btn btn-danger"
+              onClick={() => {
+                remove.mutate(confirmDelete.id);
+                setConfirmDelete(null);
+              }}
+              disabled={remove.isPending}
+            >
+              {remove.isPending ? 'Deleting…' : 'Yes'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {editing && <RoleModal role={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
     </>
+  );
+}
+
+function RoleActionMenu({
+  canUpdate,
+  canDelete,
+  onEdit,
+  onDelete,
+  isPending,
+}: {
+  role?: Role;
+  canUpdate: boolean;
+  canDelete: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  isPending: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  if (!canUpdate && !canDelete) return null;
+
+  return (
+    <div className="action-menu-container">
+      <button
+        ref={btnRef}
+        type="button"
+        className="btn-dots"
+        aria-label="Actions"
+        onClick={() => setOpen((v) => !v)}
+      >
+        ⋮
+      </button>
+      {open && (
+        <ActionMenuDropdown btnRef={btnRef} onClose={() => setOpen(false)}>
+          {canUpdate && (
+            <button
+              type="button"
+              className="action-menu-item"
+              onClick={() => {
+                setOpen(false);
+                onEdit();
+              }}
+            >
+              Edit
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              className="action-menu-item danger"
+              disabled={isPending}
+              onClick={() => {
+                setOpen(false);
+                onDelete();
+              }}
+            >
+              Delete
+            </button>
+          )}
+        </ActionMenuDropdown>
+      )}
+    </div>
   );
 }
 

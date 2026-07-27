@@ -5,7 +5,7 @@ import { doctorsApi } from '../api/endpoints';
 import type { Doctor } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../components/Toast';
-import { Badge, Empty, Field, Loading, Modal } from '../components/ui';
+import { ActionMenuDropdown, Badge, Empty, Field, Loading, Modal } from '../components/ui';
 
 export default function Doctors() {
   const { can } = useAuth();
@@ -13,6 +13,7 @@ export default function Doctors() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [editing, setEditing] = useState<Doctor | 'new' | null>(null);
+  const [confirmDoctor, setConfirmDoctor] = useState<Doctor | null>(null);
 
   const { data, isLoading } = useQuery({ queryKey: ['doctors'], queryFn: doctorsApi.list });
 
@@ -49,7 +50,7 @@ export default function Doctors() {
                 <th>Specialization</th>
                 <th>Fee</th>
                 <th>Visibility</th>
-                <th style={{ width: 1 }}></th>
+                <th style={{ width: 1, textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -64,37 +65,49 @@ export default function Doctors() {
                       label={d.is_enabled ? 'Enabled' : 'Disabled'}
                     />
                   </td>
-                  <td>
-                    <div className="row" style={{ justifyContent: 'flex-end' }}>
-                      {can('opd_schedules', 'read') && (
-                        <button
-                          className="btn btn-sm"
-                          onClick={() => navigate(`/doctors/${d.id}/schedule`)}
-                        >
-                          Schedule
-                        </button>
-                      )}
-                      {can('doctors', 'update') && (
-                        <>
-                          <button className="btn btn-sm" onClick={() => setEditing(d)}>
-                            Edit
-                          </button>
-                          <button
-                            className="btn btn-sm"
-                            onClick={() => toggle.mutate(d)}
-                            disabled={toggle.isPending}
-                          >
-                            {d.is_enabled ? 'Disable' : 'Enable'}
-                          </button>
-                        </>
-                      )}
-                    </div>
+                  <td style={{ textAlign: 'right' }}>
+                    <DoctorActionMenu
+                      doctor={d}
+                      canSchedule={can('opd_schedules', 'read')}
+                      canUpdate={can('doctors', 'update')}
+                      onSchedule={() => navigate(`/doctors/${d.id}/schedule`)}
+                      onEdit={() => setEditing(d)}
+                      onToggle={() => setConfirmDoctor(d)}
+                      isPending={toggle.isPending}
+                    />
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {confirmDoctor && (
+        <Modal
+          title={confirmDoctor.is_enabled ? 'Disable Doctor' : 'Enable Doctor'}
+          onClose={() => setConfirmDoctor(null)}
+        >
+          <p style={{ margin: '12px 0 20px', color: 'var(--text)' }}>
+            Are you sure you want to {confirmDoctor.is_enabled ? 'disable' : 'enable'}{' '}
+            <strong>{confirmDoctor.name}</strong>?
+          </p>
+          <div className="modal-actions">
+            <button className="btn" onClick={() => setConfirmDoctor(null)}>
+              No
+            </button>
+            <button
+              className={`btn ${confirmDoctor.is_enabled ? 'btn-danger' : 'btn-primary'}`}
+              onClick={() => {
+                toggle.mutate(confirmDoctor);
+                setConfirmDoctor(null);
+              }}
+              disabled={toggle.isPending}
+            >
+              {toggle.isPending ? 'Processing…' : 'Yes'}
+            </button>
+          </div>
+        </Modal>
       )}
 
       {editing && (
@@ -104,6 +117,84 @@ export default function Doctors() {
         />
       )}
     </>
+  );
+}
+
+function DoctorActionMenu({
+  doctor,
+  canSchedule,
+  canUpdate,
+  onSchedule,
+  onEdit,
+  onToggle,
+  isPending,
+}: {
+  doctor: Doctor;
+  canSchedule: boolean;
+  canUpdate: boolean;
+  onSchedule: () => void;
+  onEdit: () => void;
+  onToggle: () => void;
+  isPending: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  if (!canSchedule && !canUpdate) return null;
+
+  return (
+    <div className="action-menu-container">
+      <button
+        ref={btnRef}
+        type="button"
+        className="btn-dots"
+        aria-label="Actions"
+        onClick={() => setOpen((v) => !v)}
+      >
+        ⋮
+      </button>
+      {open && (
+        <ActionMenuDropdown btnRef={btnRef} onClose={() => setOpen(false)}>
+          {canSchedule && (
+            <button
+              type="button"
+              className="action-menu-item"
+              onClick={() => {
+                setOpen(false);
+                onSchedule();
+              }}
+            >
+              Schedule
+            </button>
+          )}
+          {canUpdate && (
+            <>
+              <button
+                type="button"
+                className="action-menu-item"
+                onClick={() => {
+                  setOpen(false);
+                  onEdit();
+                }}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className={`action-menu-item ${doctor.is_enabled ? 'danger' : ''}`}
+                disabled={isPending}
+                onClick={() => {
+                  setOpen(false);
+                  onToggle();
+                }}
+              >
+                {doctor.is_enabled ? 'Disable' : 'Enable'}
+              </button>
+            </>
+          )}
+        </ActionMenuDropdown>
+      )}
+    </div>
   );
 }
 

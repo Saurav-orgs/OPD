@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 export function Spinner() {
   return <span className="spinner" aria-label="Loading" />;
@@ -69,6 +69,79 @@ export function Field({
       <label>{label}</label>
       {children}
       {error && <span className="err">{error}</span>}
+    </div>
+  );
+}
+
+export function ActionMenuDropdown({
+  btnRef,
+  onClose,
+  children,
+}: {
+  btnRef: React.RefObject<HTMLButtonElement>;
+  onClose: () => void;
+  children: ReactNode;
+}) {
+  const [coords, setCoords] = useState<{ top?: number; bottom?: number; right: number }>({ right: 0 });
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      const right = Math.max(12, window.innerWidth - rect.right);
+      const spaceBelow = window.innerHeight - rect.bottom;
+
+      if (spaceBelow < 180) {
+        setCoords({
+          bottom: Math.max(12, window.innerHeight - rect.top + 4),
+          right,
+        });
+      } else {
+        setCoords({
+          top: Math.max(12, rect.bottom + 4),
+          right,
+        });
+      }
+    }
+  }, [btnRef]);
+
+  useEffect(() => {
+    const handleScrollOrResize = () => onClose();
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        btnRef.current &&
+        !btnRef.current.contains(e.target as Node)
+      ) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [btnRef, onClose]);
+
+  return (
+    <div
+      ref={menuRef}
+      className="action-menu-dropdown"
+      style={{
+        position: 'fixed',
+        top: coords.top !== undefined ? `${coords.top}px` : 'auto',
+        bottom: coords.bottom !== undefined ? `${coords.bottom}px` : 'auto',
+        right: `${coords.right}px`,
+        zIndex: 9999,
+      }}
+    >
+      {children}
     </div>
   );
 }
