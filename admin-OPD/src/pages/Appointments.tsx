@@ -12,6 +12,7 @@ export default function Appointments() {
   const location = useLocation();
   const paramId = searchParams.get('selected') || (location.state as { selectedId?: string } | null)?.selectedId || null;
 
+  const [searchInput, setSearchInput] = useState('');
   const [filters, setFilters] = useState<{ doctorId?: string; date?: string; status?: string; search?: string }>({});
   const [selected, setSelected] = useState<string | null>(paramId);
 
