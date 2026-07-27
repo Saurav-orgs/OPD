@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { UniqueConstraintError } from 'sequelize';
+import { Op, UniqueConstraintError } from 'sequelize';
 import { Appointment } from '../database/models/appointment.model';
 import { Doctor } from '../database/models/doctor.model';
 import { SlotsService } from '../slots/slots.service';
@@ -109,6 +109,16 @@ export class AppointmentsService {
     }
     if (query.date) where.appointment_date = query.date;
     if (query.status) where.status = query.status;
+
+    // Free-text search: match patient name or mobile (case-insensitive).
+    const search = query.search?.trim();
+    if (search) {
+      const like = `%${search}%`;
+      where[Op.or] = [
+        { patient_name: { [Op.iLike]: like } },
+        { patient_mobile: { [Op.iLike]: like } },
+      ];
+    }
 
     return this.appointmentModel.findAll({
       where,

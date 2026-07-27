@@ -99,8 +99,12 @@ export const schedulesApi = {
 
 // ── Appointments ─────────────────────────────────────────────
 export const appointmentsApi = {
-  list: (params: { doctorId?: string; date?: string; status?: string }) =>
-    api.get<Appointment[]>('/appointments', { params }).then((r) => r.data),
+  list: (params: {
+    doctorId?: string;
+    date?: string;
+    status?: string;
+    search?: string;
+  }) => api.get<Appointment[]>('/appointments', { params }).then((r) => r.data),
   get: (id: string) => api.get<Appointment>(`/appointments/${id}`).then((r) => r.data),
   setConsultation: (id: string, status: string) =>
     api

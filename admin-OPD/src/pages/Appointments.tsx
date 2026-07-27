@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { appointmentsApi, doctorsApi } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
@@ -7,8 +7,23 @@ import { Badge, Empty, Loading, Modal } from '../components/ui';
 
 export default function Appointments() {
   const { user, can } = useAuth();
-  const [filters, setFilters] = useState<{ doctorId?: string; date?: string; status?: string }>({});
+  const [filters, setFilters] = useState<{
+    doctorId?: string;
+    date?: string;
+    status?: string;
+    search?: string;
+  }>({});
+  const [searchInput, setSearchInput] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
+
+  // Debounce the free-text search so we don't refetch on every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const q = searchInput.trim();
+      setFilters((f) => ({ ...f, search: q || undefined }));
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   // Only admins pick a doctor; doctors are auto-scoped server-side.
   const doctorsQ = useQuery({
@@ -30,6 +45,14 @@ export default function Appointments() {
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="row" style={{ flexWrap: 'wrap' }}>
+          <input
+            className="input"
+            type="search"
+            placeholder="Search name or phone…"
+            style={{ width: 240 }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
           {doctorsQ.data && (
             <select
               className="select"
@@ -60,7 +83,15 @@ export default function Appointments() {
             <option value="confirmed">Confirmed</option>
             <option value="rejected">Rejected</option>
           </select>
-          <button className="btn btn-sm" onClick={() => setFilters({})}>Clear</button>
+          <button
+            className="btn btn-sm"
+            onClick={() => {
+              setSearchInput('');
+              setFilters({});
+            }}
+          >
+            Clear
+          </button>
         </div>
       </div>
 
