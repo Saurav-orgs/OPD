@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { doctorsApi, rolesApi, usersApi } from '../api/endpoints';
 import type { User } from '../api/types';
 import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../components/Toast';
-import { Badge, Empty, Field, Loading, Modal } from '../components/ui';
+import { ActionMenuDropdown, Badge, Empty, Field, Loading, Modal } from '../components/ui';
 
 export default function Users() {
   const { can } = useAuth();
   const toast = useToast();
   const qc = useQueryClient();
   const [editing, setEditing] = useState<User | 'new' | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<User | null>(null);
 
   const usersQ = useQuery({ queryKey: ['users'], queryFn: usersApi.list });
 
@@ -38,7 +39,7 @@ export default function Users() {
           <table>
             <thead>
               <tr>
-                <th>Name</th><th>Email</th><th>Type</th><th>Role</th><th>Status</th><th></th>
+                <th>Name</th><th>Email</th><th>Type</th><th>Role</th><th>Status</th><th style={{ width: 1, textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -49,15 +50,15 @@ export default function Users() {
                   <td style={{ textTransform: 'capitalize' }}>{u.type.replace('_', ' ')}</td>
                   <td className="muted">{u.role?.name ?? '—'}</td>
                   <td><Badge value={u.is_active ? 'available' : 'rejected'} label={u.is_active ? 'Active' : 'Inactive'} /></td>
-                  <td>
-                    <div className="row" style={{ justifyContent: 'flex-end' }}>
-                      {can('users', 'update') && u.type !== 'super_admin' && (
-                        <button className="btn btn-sm" onClick={() => setEditing(u)}>Edit</button>
-                      )}
-                      {can('users', 'delete') && u.type !== 'super_admin' && (
-                        <button className="btn btn-sm btn-danger" onClick={() => remove.mutate(u.id)}>Delete</button>
-                      )}
-                    </div>
+                  <td style={{ textAlign: 'right' }}>
+                    <UserActionMenu
+                      user={u}
+                      canUpdate={can('users', 'update') && u.type !== 'super_admin'}
+                      canDelete={can('users', 'delete') && u.type !== 'super_admin'}
+                      onEdit={() => setEditing(u)}
+                      onDelete={() => setConfirmDelete(u)}
+                      isPending={remove.isPending}
+                    />
                   </td>
                 </tr>
               ))}
@@ -66,10 +67,94 @@ export default function Users() {
         </div>
       )}
 
+      {confirmDelete && (
+        <Modal title="Delete user" onClose={() => setConfirmDelete(null)}>
+          <p style={{ margin: '12px 0 20px', color: 'var(--text)' }}>
+            Are you sure you want to delete user <strong>{confirmDelete.name}</strong>?
+          </p>
+          <div className="modal-actions">
+            <button className="btn" onClick={() => setConfirmDelete(null)}>No</button>
+            <button
+              className="btn btn-danger"
+              onClick={() => {
+                remove.mutate(confirmDelete.id);
+                setConfirmDelete(null);
+              }}
+              disabled={remove.isPending}
+            >
+              {remove.isPending ? 'Deleting…' : 'Yes'}
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {editing && (
         <UserModal user={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />
       )}
     </>
+  );
+}
+
+function UserActionMenu({
+  canUpdate,
+  canDelete,
+  onEdit,
+  onDelete,
+  isPending,
+}: {
+  user?: User;
+  canUpdate: boolean;
+  canDelete: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  isPending: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  if (!canUpdate && !canDelete) return null;
+
+  return (
+    <div className="action-menu-container">
+      <button
+        ref={btnRef}
+        type="button"
+        className="btn-dots"
+        aria-label="Actions"
+        onClick={() => setOpen((v) => !v)}
+      >
+        ⋮
+      </button>
+      {open && (
+        <ActionMenuDropdown btnRef={btnRef} onClose={() => setOpen(false)}>
+          {canUpdate && (
+            <button
+              type="button"
+              className="action-menu-item"
+              onClick={() => {
+                setOpen(false);
+                onEdit();
+              }}
+            >
+              Edit
+            </button>
+          )}
+          {canDelete && (
+            <button
+              type="button"
+              className="action-menu-item danger"
+              disabled={isPending}
+              onClick={() => {
+                setOpen(false);
+                onDelete();
+              }}
+            >
+              Delete
+            </button>
+          )}
+        </ActionMenuDropdown>
+      )}
+    </div>
   );
 }
 

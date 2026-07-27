@@ -1,9 +1,11 @@
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi, doctorsApi } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { Badge, Empty, Loading } from '../components/ui';
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard'],
@@ -58,19 +60,23 @@ export default function Dashboard() {
           {data.appointments.length === 0 ? (
             <div className="empty">Nothing booked for today.</div>
           ) : (
-            <div className="table-wrap" style={{ border: 'none' }}>
-              <table style={{ minWidth: 420 }}>
+            <div className="table-wrap" style={{ border: 'none', maxHeight: 360, overflowY: 'auto', overflowX: 'auto' }}>
+              <table style={{ minWidth: 440 }}>
                 <thead>
                   <tr>
-                    <th>Time</th>
-                    <th>Patient</th>
-                    <th>Mobile</th>
-                    <th>Consultation</th>
+                    <th style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--page)' }}>Time</th>
+                    <th style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--page)' }}>Patient</th>
+                    <th style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--page)' }}>Mobile</th>
+                    <th style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--page)' }}>Consultation</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.appointments.map((a) => (
-                    <tr key={a.id}>
+                    <tr
+                      key={a.id}
+                      className="clickable-row"
+                      onClick={() => navigate(`/appointments?selected=${a.id}`)}
+                    >
                       <td>{a.start_time?.slice(0, 5)}</td>
                       <td>{a.patient_name}</td>
                       <td className="muted">{a.patient_mobile}</td>
