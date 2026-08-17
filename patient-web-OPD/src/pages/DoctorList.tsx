@@ -115,7 +115,7 @@ const DoctorCardItem: React.FC<{ doctor: Doctor; onClick: () => void }> = ({
   return (
     <div className="doctor-card" onClick={onClick}>
       <div className="doctor-avatar-wrap">
-        <NetworkAvatar url={doctor.profilePhotoUrl} size={76} alt={doctor.name} />
+        <NetworkAvatar url={doctor.profilePhotoUrl} size={56} alt={doctor.name} />
         <div className="doctor-online-dot" title="Available for OPD" />
       </div>
 

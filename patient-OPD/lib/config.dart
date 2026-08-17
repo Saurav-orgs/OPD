@@ -19,7 +19,8 @@ class AppConfig {
     if (fromEnv.isNotEmpty) return fromEnv;
     final host =
         (!Platform.isIOS && Platform.isAndroid) ? '10.0.2.2' : 'localhost';
-    return 'http://$host:3000/api';
+    // return 'http://$host:3000/api';
+    return 'https://76ml0vk8-3000.inc1.devtunnels.ms/api';
   }
 
   /// Patients may book from today up to +7 days (matches backend).

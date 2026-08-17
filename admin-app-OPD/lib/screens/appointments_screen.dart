@@ -325,12 +325,21 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
   bool _changed = false;
   bool _busy = false;
 
+  final _notes = TextEditingController();
+  bool _notesSeeded = false;
+
   ApiClient get _api => AuthScope.of(context).api;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _future = _api.getAppointment(widget.id);
+  }
+
+  @override
+  void dispose() {
+    _notes.dispose();
+    super.dispose();
   }
 
   Future<void> _run(Future<Appointment> Function() action, String ok) async {
@@ -367,6 +376,11 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
               return const StateView(error: 'Could not load this appointment.');
             }
             final a = snap.data!;
+            // Seed the note editor once from the loaded appointment.
+            if (!_notesSeeded) {
+              _notes.text = a.doctorNotes ?? '';
+              _notesSeeded = true;
+            }
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -397,6 +411,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 16),
+                _notesCard(a, canUpdate),
                 const SizedBox(height: 16),
                 SectionCard(
                   child: Column(
@@ -432,6 +448,53 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _notesCard(Appointment a, bool canUpdate) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const CardTitle('Doctor’s note'),
+          const Text(
+            'Shown when this patient books their next OPD.',
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
+          const SizedBox(height: 10),
+          if (canUpdate) ...[
+            TextField(
+              controller: _notes,
+              minLines: 3,
+              maxLines: 6,
+              maxLength: 2000,
+              decoration: const InputDecoration(
+                hintText: 'Add a note for this patient’s next visit…',
+              ),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: _busy
+                    ? null
+                    : () => _run(() => _api.setNotes(a.id, _notes.text.trim()),
+                        'Note saved'),
+                child: const Text('Save note'),
+              ),
+            ),
+          ] else
+            Text(
+              (a.doctorNotes != null && a.doctorNotes!.isNotEmpty)
+                  ? a.doctorNotes!
+                  : 'No note yet.',
+              style: TextStyle(
+                color: (a.doctorNotes != null && a.doctorNotes!.isNotEmpty)
+                    ? AppColors.text
+                    : AppColors.textSecondary,
+              ),
+            ),
+        ],
       ),
     );
   }

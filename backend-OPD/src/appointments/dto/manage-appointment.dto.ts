@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, Matches } from 'class-validator';
+import { IsEnum, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { ConsultationStatus, PaymentStatus } from '../../common/enums';
 
 /** Doctor's post-checkup marking (#3). `pending` is not settable here. */
@@ -22,6 +22,17 @@ export class PaymentReviewDto {
   @ApiProperty({ enum: [PaymentStatus.VERIFIED, PaymentStatus.REJECTED] })
   @IsEnum(PaymentStatus, { message: 'Status must be verified or rejected.' })
   status: PaymentStatus;
+}
+
+/** Doctor's editable note on a visit (#, referred to on the next OPD). */
+export class AppointmentNotesDto {
+  @ApiProperty({
+    description: "Doctor's note for this visit. Send an empty string to clear.",
+    maxLength: 2000,
+  })
+  @IsString()
+  @MaxLength(2000, { message: 'Note must be 2000 characters or fewer.' })
+  notes: string;
 }
 
 export class ListAppointmentsQueryDto {

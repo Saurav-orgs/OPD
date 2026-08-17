@@ -112,6 +112,8 @@ export const appointmentsApi = {
       .then((r) => r.data),
   setPayment: (id: string, status: string) =>
     api.patch<Appointment>(`/appointments/${id}/payment`, { status }).then((r) => r.data),
+  setNotes: (id: string, notes: string) =>
+    api.patch<Appointment>(`/appointments/${id}/notes`, { notes }).then((r) => r.data),
 };
 
 // ── Dashboard ────────────────────────────────────────────────

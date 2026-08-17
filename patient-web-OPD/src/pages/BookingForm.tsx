@@ -245,7 +245,7 @@ export const BookingForm: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div className="section-card summary-card-accent">
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                <NetworkAvatar url={doctor.profilePhotoUrl} size={64} alt={doctor.name} />
+                <NetworkAvatar url={doctor.profilePhotoUrl} size={48} alt={doctor.name} />
                 <div style={{ flex: 1 }}>
                   <div className="summary-tag">
                     Appointment Summary

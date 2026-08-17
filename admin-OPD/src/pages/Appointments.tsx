@@ -203,10 +203,22 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
     queryFn: () => appointmentsApi.get(id),
   });
 
+  // Local draft for the doctor's note, seeded from the loaded appointment.
+  const [notes, setNotes] = useState('');
+  useEffect(() => {
+    setNotes(a?.doctor_notes ?? '');
+  }, [a?.doctor_notes]);
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['appointment', id] });
     qc.invalidateQueries({ queryKey: ['appointments'] });
   };
+
+  const saveNotes = useMutation({
+    mutationFn: (value: string) => appointmentsApi.setNotes(id, value),
+    onSuccess: () => { invalidate(); toast.success('Note saved'); },
+    onError: (e) => toast.error(e),
+  });
 
   const consult = useMutation({
     mutationFn: (status: string) => appointmentsApi.setConsultation(id, status),
@@ -256,6 +268,38 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {a && (
+        <div style={{ marginTop: 20, borderTop: 'var(--hairline)', paddingTop: 16 }}>
+          <div className="muted" style={{ fontSize: 12, marginBottom: 8 }}>
+            Doctor’s note · shown when this patient books their next OPD
+          </div>
+          {canUpdate ? (
+            <>
+              <textarea
+                className="input"
+                rows={4}
+                placeholder="Add a note for this patient’s next visit…"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+              <div className="row" style={{ marginTop: 8, justifyContent: 'flex-end' }}>
+                <button
+                  className="btn btn-primary btn-sm"
+                  disabled={saveNotes.isPending || notes === (a.doctor_notes ?? '')}
+                  onClick={() => saveNotes.mutate(notes)}
+                >
+                  {saveNotes.isPending ? 'Saving…' : 'Save note'}
+                </button>
+              </div>
+            </>
+          ) : a.doctor_notes ? (
+            <div style={{ whiteSpace: 'pre-wrap' }}>{a.doctor_notes}</div>
+          ) : (
+            <span className="muted">No note yet.</span>
+          )}
         </div>
       )}
 

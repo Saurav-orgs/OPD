@@ -298,6 +298,7 @@ class Appointment {
   final String patientMobile;
   final String? patientAddress;
   final String? description;
+  final String? doctorNotes;
   final String status; // confirmed | rejected
   final String consultationStatus; // pending | done | on_hold | rejected
   final String paymentStatus; // paid_unverified | verified | rejected
@@ -315,6 +316,7 @@ class Appointment {
     required this.patientMobile,
     this.patientAddress,
     this.description,
+    this.doctorNotes,
     required this.status,
     required this.consultationStatus,
     required this.paymentStatus,
@@ -336,6 +338,7 @@ class Appointment {
         patientMobile: j['patient_mobile'] as String? ?? '',
         patientAddress: j['patient_address'] as String?,
         description: j['description'] as String?,
+        doctorNotes: j['doctor_notes'] as String?,
         status: j['status'] as String? ?? 'confirmed',
         consultationStatus: j['consultation_status'] as String? ?? 'pending',
         paymentStatus: j['payment_status'] as String? ?? 'paid_unverified',

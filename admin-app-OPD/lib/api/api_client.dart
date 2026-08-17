@@ -272,6 +272,10 @@ class ApiClient {
       Appointment.fromJson(await _patch('/appointments/$id/payment',
           {'status': status}) as Map<String, dynamic>);
 
+  Future<Appointment> setNotes(String id, String notes) async =>
+      Appointment.fromJson(await _patch('/appointments/$id/notes',
+          {'notes': notes}) as Map<String, dynamic>);
+
   // ── Dashboard ──────────────────────────────────────────────
   Future<DashboardSummary> dashboard() async => DashboardSummary.fromJson(
       await _get('/dashboard') as Map<String, dynamic>);

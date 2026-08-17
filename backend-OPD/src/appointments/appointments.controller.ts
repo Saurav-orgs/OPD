@@ -10,6 +10,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AppointmentsService } from './appointments.service';
 import {
+  AppointmentNotesDto,
   ConsultationDto,
   ListAppointmentsQueryDto,
   PaymentReviewDto,
@@ -63,5 +64,16 @@ export class AppointmentsController {
     @CurrentUser() user: AuthUser,
   ) {
     return this.service.setPayment(id, dto, user);
+  }
+
+  @Patch(':id/notes')
+  @ApiOperation({ summary: "Save the doctor's note for a visit" })
+  @Permissions({ module: PermissionModule.APPOINTMENTS, action: PermissionAction.UPDATE })
+  setNotes(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AppointmentNotesDto,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.service.setNotes(id, dto, user);
   }
 }

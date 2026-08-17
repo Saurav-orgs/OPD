@@ -8,6 +8,7 @@ import { SlotsService } from '../slots/slots.service';
 import { StorageService } from '../uploads/storage.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import {
+  AppointmentNotesDto,
   ConsultationDto,
   ListAppointmentsQueryDto,
   PaymentReviewDto,
@@ -169,6 +170,19 @@ export class AppointmentsService {
         status: AppointmentStatus.REJECTED,
       } as any);
     }
+    return this.withDoctor(id);
+  }
+
+  /** Save the doctor's free-text note for a visit (empty string clears it). */
+  async setNotes(
+    id: string,
+    dto: AppointmentNotesDto,
+    user: AuthUser,
+  ): Promise<Appointment> {
+    const appointment = await this.findRaw(id);
+    this.assertOwnership(appointment, user);
+    const notes = dto.notes.trim();
+    await appointment.update({ doctor_notes: notes || null } as any);
     return this.withDoctor(id);
   }
 

@@ -98,6 +98,7 @@ export interface Appointment {
   patient_mobile: string;
   patient_address: string | null;
   description: string | null;
+  doctor_notes: string | null;
   payment_screenshot_url: string;
   status: AppointmentStatus;
   consultation_status: ConsultationStatus;

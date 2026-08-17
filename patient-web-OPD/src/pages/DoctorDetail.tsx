@@ -85,7 +85,7 @@ export const DoctorDetail: React.FC = () => {
       <div className="detail-grid" style={{ marginTop: '10px' }}>
         <div className="section-card">
           <div className="doctor-detail-header-flex">
-            <NetworkAvatar url={doctor.profilePhotoUrl} size={84} alt={doctor.name} />
+            <NetworkAvatar url={doctor.profilePhotoUrl} size={64} alt={doctor.name} />
 
             <div style={{ flex: 1, minWidth: '200px' }}>
               <div style={{ fontWeight: 800, fontSize: '22px', color: 'var(--text)' }}>

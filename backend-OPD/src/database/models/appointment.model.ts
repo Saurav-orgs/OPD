@@ -52,6 +52,10 @@ export class Appointment extends Model<Appointment> {
   @Column({ type: DataType.TEXT, allowNull: true })
   description: string | null;
 
+  /** Doctor's free-text note, referred to on the patient's next OPD visit. */
+  @Column({ type: DataType.TEXT, allowNull: true })
+  doctor_notes: string | null;
+
   /** S3 object key for the uploaded payment screenshot. */
   @Column({ type: DataType.STRING, allowNull: false })
   payment_screenshot_url: string;
