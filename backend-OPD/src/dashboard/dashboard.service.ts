@@ -1,49 +1,40 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/sequelize';
 import { Appointment } from '../database/models/appointment.model';
 import { Doctor } from '../database/models/doctor.model';
-import { AppointmentStatus, UserType } from '../common/enums';
+import { AppointmentStatus } from '../common/enums';
 import { AuthUser } from '../common/decorators/current-user.decorator';
+import { getTenantContext } from '../tenant/tenant-context';
 import { nowInClinic } from '../common/utils/clinic-time';
+import { InjectModel as InjectM } from '@nestjs/sequelize';
+import { Tenant } from '../database/models/tenant.model';
 
 @Injectable()
 export class DashboardService {
   constructor(
-    private readonly config: ConfigService,
     @InjectModel(Appointment) private readonly appointmentModel: typeof Appointment,
     @InjectModel(Doctor) private readonly doctorModel: typeof Doctor,
+    @InjectModel(Tenant) private readonly tenantModel: typeof Tenant,
   ) {}
 
   async summary(user: AuthUser) {
-    const today = nowInClinic(
-      this.config.get<string>('clinicTimezone') ?? 'Asia/Kolkata',
-    ).date;
-    const scope: any = { appointment_date: today };
-    if (user.type === UserType.DOCTOR) {
-      if (!user.doctorId) return { date: today, total: 0, byDoctor: [], byStatus: {} };
-      scope.doctor_id = user.doctorId;
+    // Resolve timezone from tenant row (falls back to Kolkata for platform admins).
+    let tz = 'Asia/Kolkata';
+    if (user.tenantId) {
+      const tenant = await this.tenantModel.findByPk(user.tenantId);
+      if (tenant) tz = tenant.timezone;
     }
 
+    const today = nowInClinic(tz).date;
+
+    // The Sequelize hook automatically scopes by tenant_id for tenant users.
     const todays = await this.appointmentModel.findAll({
-      where: scope,
+      where: { appointment_date: today },
       include: [{ model: Doctor, attributes: ['id', 'name'] }],
       order: [['start_time', 'ASC']],
     });
 
     const confirmed = todays.filter((a) => a.status === AppointmentStatus.CONFIRMED);
-
-    const byDoctorMap = new Map<string, { doctorId: string; name: string; count: number }>();
-    for (const a of confirmed) {
-      const key = a.doctor_id;
-      const entry = byDoctorMap.get(key) ?? {
-        doctorId: key,
-        name: (a as any).doctor?.name ?? 'Unknown',
-        count: 0,
-      };
-      entry.count += 1;
-      byDoctorMap.set(key, entry);
-    }
 
     const byStatus = confirmed.reduce<Record<string, number>>((acc, a) => {
       acc[a.consultation_status] = (acc[a.consultation_status] ?? 0) + 1;
@@ -53,7 +44,6 @@ export class DashboardService {
     return {
       date: today,
       total: confirmed.length,
-      byDoctor: [...byDoctorMap.values()],
       byStatus,
       appointments: confirmed,
     };

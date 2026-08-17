@@ -42,6 +42,13 @@ class AuthController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> register(Map<String, dynamic> body) async {
+    final res = await api.register(body);
+    await api.tokens.set(res.accessToken);
+    user = res.user;
+    notifyListeners();
+  }
+
   Future<void> logout() async {
     await api.tokens.clear();
     user = null;

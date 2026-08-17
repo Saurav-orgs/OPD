@@ -5,7 +5,9 @@ export type PermModule =
   | 'doctors'
   | 'opd_schedules'
   | 'appointments'
-  | 'dashboard';
+  | 'dashboard'
+  | 'tenant'
+  | 'platform';
 export type PermAction = 'create' | 'read' | 'update' | 'delete';
 
 export interface AuthUser {
@@ -13,9 +15,33 @@ export interface AuthUser {
   email: string;
   name: string;
   type: UserType;
+  tenantId: string | null;
+  tenantStatus: 'active' | 'suspended' | null;
   roleId: string | null;
   doctorId: string | null;
   permissions: string[]; // "module:action"
+}
+
+export interface Tenant {
+  id: string;
+  name: string;
+  slug: string;
+  contact_email: string | null;
+  contact_phone: string | null;
+  address: string | null;
+  logo_url: string | null;
+  timezone: string;
+  status: 'active' | 'suspended';
+  owner_user_id: string | null;
+}
+
+export interface OnboardingChecklist {
+  profile: boolean;
+  photo: boolean;
+  consultation_fee: boolean;
+  payment_qr: boolean;
+  schedule: boolean;
+  complete: boolean;
 }
 
 export interface LoginResponse {
@@ -112,7 +138,10 @@ export interface Appointment {
 export interface DashboardSummary {
   date: string;
   total: number;
-  byDoctor: { doctorId: string; name: string; count: number }[];
   byStatus: Record<string, number>;
   appointments: Appointment[];
+}
+
+export interface PlatformTenant extends Tenant {
+  stats?: { userCount: number; doctorCount: number; appointmentCount: number };
 }

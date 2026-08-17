@@ -7,6 +7,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { Doctor } from './doctor.model';
+import { Tenant } from './tenant.model';
 
 /**
  * Per-doctor working-time config. A weekday may have MULTIPLE rows to support
@@ -21,6 +22,10 @@ export class OpdSchedule extends Model<OpdSchedule> {
     primaryKey: true,
   })
   id: string;
+
+  @ForeignKey(() => Tenant)
+  @Column({ type: DataType.UUID, allowNull: false })
+  tenant_id: string;
 
   @ForeignKey(() => Doctor)
   @Column({ type: DataType.UUID, allowNull: false })
@@ -41,6 +46,9 @@ export class OpdSchedule extends Model<OpdSchedule> {
 
   @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: true })
   is_active: boolean;
+
+  @BelongsTo(() => Tenant)
+  tenant: Tenant;
 
   @BelongsTo(() => Doctor)
   doctor: Doctor;

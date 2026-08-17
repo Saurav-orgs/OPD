@@ -1,6 +1,8 @@
 import {
+  BelongsTo,
   Column,
   DataType,
+  ForeignKey,
   HasMany,
   Model,
   Table,
@@ -8,6 +10,7 @@ import {
 import { OpdSchedule } from './opd-schedule.model';
 import { ScheduleException } from './schedule-exception.model';
 import { Appointment } from './appointment.model';
+import { Tenant } from './tenant.model';
 
 @Table({
   tableName: 'doctors',
@@ -22,6 +25,10 @@ export class Doctor extends Model<Doctor> {
     primaryKey: true,
   })
   id: string;
+
+  @ForeignKey(() => Tenant)
+  @Column({ type: DataType.UUID, allowNull: false })
+  tenant_id: string;
 
   @Column({ type: DataType.STRING, allowNull: false })
   name: string;
@@ -52,6 +59,9 @@ export class Doctor extends Model<Doctor> {
   /** Controls patient-app visibility. */
   @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
   is_enabled: boolean;
+
+  @BelongsTo(() => Tenant)
+  tenant: Tenant;
 
   @HasMany(() => OpdSchedule)
   schedules: OpdSchedule[];

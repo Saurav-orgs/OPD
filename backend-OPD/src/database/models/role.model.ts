@@ -1,6 +1,8 @@
 import {
+  BelongsTo,
   Column,
   DataType,
+  ForeignKey,
   Model,
   Table,
   BelongsToMany,
@@ -9,6 +11,7 @@ import {
 import { Permission } from './permission.model';
 import { RolePermission } from './role-permission.model';
 import { User } from './user.model';
+import { Tenant } from './tenant.model';
 
 @Table({ tableName: 'roles', timestamps: true, underscored: true })
 export class Role extends Model<Role> {
@@ -19,7 +22,11 @@ export class Role extends Model<Role> {
   })
   id: string;
 
-  @Column({ type: DataType.STRING, allowNull: false, unique: true })
+  @ForeignKey(() => Tenant)
+  @Column({ type: DataType.UUID, allowNull: false })
+  tenant_id: string;
+
+  @Column({ type: DataType.STRING, allowNull: false })
   name: string;
 
   @Column({ type: DataType.STRING, allowNull: true })
@@ -28,6 +35,9 @@ export class Role extends Model<Role> {
   /** Protects built-in roles (e.g. SuperAdmin) from edit/delete. */
   @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
   is_system: boolean;
+
+  @BelongsTo(() => Tenant)
+  tenant: Tenant;
 
   @BelongsToMany(() => Permission, () => RolePermission)
   permissions: Permission[];

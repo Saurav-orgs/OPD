@@ -4,6 +4,7 @@ import '../theme.dart';
 import 'appointments_screen.dart';
 import 'dashboard_screen.dart';
 import 'doctors_screen.dart';
+import 'practice_settings_screen.dart';
 import 'profile_screen.dart';
 import 'roles_screen.dart';
 import 'users_screen.dart';
@@ -27,20 +28,25 @@ class _HomeShellState extends State<HomeShell> {
   int _index = 0;
 
   List<_Destination> _destinations(AuthController auth) {
+    final isSuperAdmin = auth.user?.isSuperAdmin ?? false;
     final all = <_Destination>[
       const _Destination(
           'Dashboard', Icons.dashboard_outlined, 'dashboard', DashboardScreen()),
       const _Destination('Appointments', Icons.event_note_outlined,
           'appointments', AppointmentsScreen()),
+      // Platform super_admin sees all doctors; tenant doctors see own profile.
+      if (isSuperAdmin)
+        const _Destination(
+            'Doctors', Icons.medical_services_outlined, 'doctors', DoctorsScreen()),
       const _Destination(
-          'Doctors', Icons.medical_services_outlined, 'doctors', DoctorsScreen()),
-      const _Destination(
-          'Users', Icons.people_alt_outlined, 'users', UsersScreen()),
+          'Team', Icons.people_alt_outlined, 'users', UsersScreen()),
       const _Destination(
           'Roles', Icons.vpn_key_outlined, 'roles', RolesScreen()),
+      if (!isSuperAdmin)
+        const _Destination(
+            'Practice', Icons.business_outlined, 'tenant', PracticeSettingsScreen()),
     ];
-    final visible =
-        all.where((d) => auth.can(d.module, 'read')).toList();
+    final visible = all.where((d) => auth.can(d.module, 'read')).toList();
     // Doctor accounts get a self-service profile page.
     if (auth.user?.isDoctor ?? false) {
       visible.add(const _Destination(

@@ -17,6 +17,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   can: (module: PermModule, action: PermAction) => boolean;
+  setUser: (user: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -63,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ user, loading, login, logout, can }),
+    () => ({ user, loading, login, logout, can, setUser }),
     [user, loading, login, logout, can],
   );
 

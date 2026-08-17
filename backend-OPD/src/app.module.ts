@@ -14,18 +14,19 @@ import { OpdSchedulesModule } from './opd-schedules/opd-schedules.module';
 import { SlotsModule } from './slots/slots.module';
 import { AppointmentsModule } from './appointments/appointments.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { TenantModule } from './tenant/tenant.module';
+import { PlatformModule } from './platform/platform.module';
 import { HealthController } from './health/health.controller';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { TenantGuard } from './common/guards/tenant.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { TenantInterceptor } from './tenant/tenant.interceptor';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      load: [configuration],
-    }),
+    ConfigModule.forRoot({ isGlobal: true, load: [configuration] }),
     LoggerModule.forRoot({
       pinoHttp: {
         transport:
@@ -48,6 +49,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     DatabaseModule,
     UploadsModule,
     AuthModule,
+    TenantModule,
     UsersModule,
     RolesModule,
     DoctorsModule,
@@ -55,13 +57,16 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     SlotsModule,
     AppointmentsModule,
     DashboardModule,
+    PlatformModule,
   ],
   controllers: [HealthController],
   providers: [
-    // Order matters: throttle → authenticate → authorize.
+    // Order: throttle → authenticate → populate tenant context → enforce tenant → authorize.
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: TenantGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_INTERCEPTOR, useClass: TenantInterceptor },
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     Reflector,

@@ -6,6 +6,7 @@ import { Permission } from '../database/models/permission.model';
 import { CreateRoleDto, UpdateRoleDto } from './dto/role.dto';
 import { AppException } from '../common/errors/app.exception';
 import { ErrorCode } from '../common/errors/error-codes';
+import { getTenantContext } from '../tenant/tenant-context';
 
 @Injectable()
 export class RolesService {
@@ -17,14 +18,12 @@ export class RolesService {
 
   listPermissions(): Promise<Permission[]> {
     return this.permissionModel.findAll({
-      order: [
-        ['module', 'ASC'],
-        ['action', 'ASC'],
-      ],
+      order: [['module', 'ASC'], ['action', 'ASC']],
     });
   }
 
   findAll(): Promise<Role[]> {
+    // Hook automatically scopes to tenant_id for tenant users.
     return this.roleModel.findAll({
       include: [Permission],
       order: [['name', 'ASC']],
@@ -33,19 +32,24 @@ export class RolesService {
 
   async findOne(id: string): Promise<Role> {
     const role = await this.roleModel.findByPk(id, { include: [Permission] });
-    if (!role)
-      throw new AppException(ErrorCode.NOT_FOUND, { message: 'Role not found.' });
+    if (!role) throw new AppException(ErrorCode.NOT_FOUND, { message: 'Role not found.' });
     return role;
   }
 
   async create(dto: CreateRoleDto): Promise<Role> {
-    await this.assertNameFree(dto.name);
+    const { tenantId } = getTenantContext();
+    await this.assertNameFree(dto.name, tenantId);
     await this.assertPermissionsExist(dto.permissionIds);
     return this.sequelize.transaction(async (t) => {
-      const role = await this.roleModel.create(
-        { name: dto.name, description: dto.description ?? null, is_system: false } as any,
-        { transaction: t },
-      );
+      const role = (await this.roleModel.create(
+        {
+          name: dto.name,
+          description: dto.description ?? null,
+          is_system: false,
+          tenant_id: tenantId,
+        } as any,
+        { transaction: t, crossTenant: true } as any,
+      )) as Role;
       await (role as any).$set('permissions', dto.permissionIds, { transaction: t });
       return (await this.roleModel.findByPk(role.id, {
         include: [Permission],
@@ -61,7 +65,8 @@ export class RolesService {
         message: 'System roles cannot be modified.',
       });
     }
-    if (dto.name && dto.name !== role.name) await this.assertNameFree(dto.name);
+    const { tenantId } = getTenantContext();
+    if (dto.name && dto.name !== role.name) await this.assertNameFree(dto.name, tenantId);
     if (dto.permissionIds) await this.assertPermissionsExist(dto.permissionIds);
 
     return this.sequelize.transaction(async (t) => {
@@ -98,8 +103,10 @@ export class RolesService {
     await role.destroy();
   }
 
-  private async assertNameFree(name: string): Promise<void> {
-    const existing = await this.roleModel.findOne({ where: { name } });
+  private async assertNameFree(name: string, tenantId: string | null): Promise<void> {
+    const where: any = { name };
+    if (tenantId) where.tenant_id = tenantId;
+    const existing = await this.roleModel.findOne({ where, crossTenant: true } as any);
     if (existing) {
       throw new AppException(ErrorCode.CONFLICT, {
         message: 'A role with this name already exists.',

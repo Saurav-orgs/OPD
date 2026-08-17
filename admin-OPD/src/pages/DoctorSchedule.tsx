@@ -80,7 +80,7 @@ export default function DoctorSchedule() {
           </span>
         </div>
         <div className="row">
-          <button className="btn" onClick={() => navigate('/doctors')}>Back</button>
+          <button className="btn" onClick={() => navigate(-1)}>Back</button>
           {canEdit && (
             <button className="btn btn-primary" onClick={() => save.mutate()} disabled={save.isPending}>
               {save.isPending ? 'Saving…' : 'Save schedule'}

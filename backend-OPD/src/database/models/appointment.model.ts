@@ -13,6 +13,7 @@ import {
   PaymentStatus,
 } from '../../common/enums';
 import { Doctor } from './doctor.model';
+import { Tenant } from './tenant.model';
 
 @Table({
   tableName: 'appointments',
@@ -26,6 +27,10 @@ export class Appointment extends Model<Appointment> {
     primaryKey: true,
   })
   id: string;
+
+  @ForeignKey(() => Tenant)
+  @Column({ type: DataType.UUID, allowNull: false })
+  tenant_id: string;
 
   @ForeignKey(() => Doctor)
   @Column({ type: DataType.UUID, allowNull: false })
@@ -84,6 +89,9 @@ export class Appointment extends Model<Appointment> {
 
   @Column({ type: DataType.STRING, allowNull: false })
   source: BookingSource;
+
+  @BelongsTo(() => Tenant)
+  tenant: Tenant;
 
   @BelongsTo(() => Doctor)
   doctor: Doctor;

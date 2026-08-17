@@ -13,6 +13,8 @@ export enum PermissionModule {
   OPD_SCHEDULES = 'opd_schedules',
   APPOINTMENTS = 'appointments',
   DASHBOARD = 'dashboard',
+  TENANT = 'tenant',
+  PLATFORM = 'platform',
 }
 
 /** CRUD actions a role may be granted per module. */

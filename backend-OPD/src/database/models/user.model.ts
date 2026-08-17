@@ -9,6 +9,7 @@ import {
 import { UserType } from '../../common/enums';
 import { Role } from './role.model';
 import { Doctor } from './doctor.model';
+import { Tenant } from './tenant.model';
 
 @Table({
   tableName: 'users',
@@ -40,6 +41,10 @@ export class User extends Model<User> {
   @Column({ type: DataType.STRING, allowNull: false })
   type: UserType;
 
+  @ForeignKey(() => Tenant)
+  @Column({ type: DataType.UUID, allowNull: true })
+  tenant_id: string | null;
+
   @ForeignKey(() => Role)
   @Column({ type: DataType.UUID, allowNull: true })
   role_id: string | null;
@@ -50,6 +55,9 @@ export class User extends Model<User> {
 
   @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: true })
   is_active: boolean;
+
+  @BelongsTo(() => Tenant)
+  tenant: Tenant;
 
   @BelongsTo(() => Role)
   role: Role;

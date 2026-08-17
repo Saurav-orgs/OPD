@@ -7,12 +7,14 @@ import { Appointment } from '../database/models/appointment.model';
 import { Doctor } from '../database/models/doctor.model';
 import { SlotsModule } from '../slots/slots.module';
 import { DoctorsModule } from '../doctors/doctors.module';
+import { TenantModule } from '../tenant/tenant.module';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([Appointment, Doctor]),
     SlotsModule,
     DoctorsModule,
+    TenantModule,
   ],
   controllers: [AppointmentsController, PublicController],
   providers: [AppointmentsService],

@@ -24,12 +24,9 @@ import { CreateDoctorDto, UpdateDoctorDto, UpdateOwnDoctorDto } from './dto/doct
 import { Permissions } from '../common/decorators/permissions.decorator';
 import { PermissionAction, PermissionModule } from '../common/enums';
 import { CurrentUser, AuthUser } from '../common/decorators/current-user.decorator';
-import { AppException } from '../common/errors/app.exception';
-import { ErrorCode } from '../common/errors/error-codes';
 
 const imageUpload = {
   storage: memoryStorage(),
-  // Hard cap so oversized uploads are rejected before buffering everything.
   limits: { fileSize: 6 * 1024 * 1024 },
 };
 
@@ -47,17 +44,18 @@ export class DoctorsController {
   constructor(private readonly doctorsService: DoctorsService) {}
 
   // ── Doctor self-service (declared before :id) ──────────────
+
   @Get('me')
-  @ApiOperation({ summary: 'Logged-in doctor’s own profile' })
+  @ApiOperation({ summary: "Logged-in doctor's own profile" })
   getOwn(@CurrentUser() user: AuthUser) {
-    return this.doctorsService.findOne(this.selfId(user));
+    return this.doctorsService.getOwn(user);
   }
 
   @Patch('me')
-  @ApiOperation({ summary: 'Doctor updates own profile (needs doctors:update)' })
+  @ApiOperation({ summary: "Doctor updates own profile (needs doctors:update)" })
   @Permissions({ module: PermissionModule.DOCTORS, action: PermissionAction.UPDATE })
   updateOwn(@CurrentUser() user: AuthUser, @Body() dto: UpdateOwnDoctorDto) {
-    return this.doctorsService.update(this.selfId(user), dto);
+    return this.doctorsService.updateOwn(user, dto);
   }
 
   @Post('me/qr')
@@ -70,7 +68,7 @@ export class DoctorsController {
     @CurrentUser() user: AuthUser,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.doctorsService.uploadQr(this.selfId(user), file);
+    return this.doctorsService.uploadQrOwn(user, file);
   }
 
   @Post('me/photo')
@@ -83,10 +81,11 @@ export class DoctorsController {
     @CurrentUser() user: AuthUser,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    return this.doctorsService.uploadPhoto(this.selfId(user), file);
+    return this.doctorsService.uploadPhotoOwn(user, file);
   }
 
-  // ── Admin CRUD ─────────────────────────────────────────────
+  // ── Admin CRUD (platform super_admin only in multi-tenant mode) ─
+
   @Post()
   @Permissions({ module: PermissionModule.DOCTORS, action: PermissionAction.CREATE })
   create(@Body() dto: CreateDoctorDto) {
@@ -151,14 +150,5 @@ export class DoctorsController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.doctorsService.uploadPhoto(id, file);
-  }
-
-  private selfId(user: AuthUser): string {
-    if (!user.doctorId) {
-      throw new AppException(ErrorCode.FORBIDDEN, {
-        message: 'This account is not linked to a doctor profile.',
-      });
-    }
-    return user.doctorId;
   }
 }

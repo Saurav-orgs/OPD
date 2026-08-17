@@ -6,9 +6,12 @@ import type {
   DaySlots,
   Doctor,
   LoginResponse,
+  OnboardingChecklist,
   Permission,
+  PlatformTenant,
   Role,
   ScheduleEntry,
+  Tenant,
   User,
 } from './types';
 
@@ -16,7 +19,37 @@ import type {
 export const authApi = {
   login: (email: string, password: string) =>
     api.post<LoginResponse>('/auth/login', { email, password }).then((r) => r.data),
+  register: (body: {
+    doctor_name: string;
+    email: string;
+    password: string;
+    mobile: string;
+    specialization?: string;
+    clinic_name?: string;
+  }) => api.post<LoginResponse>('/auth/register', body).then((r) => r.data),
   me: () => api.get<AuthUser>('/auth/me').then((r) => r.data),
+};
+
+// ── Tenant / Practice settings ────────────────────────────────
+export const tenantApi = {
+  get: () => api.get<Tenant>('/tenant').then((r) => r.data),
+  update: (body: Partial<Tenant>) => api.patch<Tenant>('/tenant', body).then((r) => r.data),
+  uploadLogo: (file: File) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    return api.post<Tenant>('/tenant/logo', fd, { headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data);
+  },
+  onboarding: () => api.get<OnboardingChecklist>('/tenant/onboarding').then((r) => r.data),
+  goLive: () => api.post('/tenant/go-live').then((r) => r.data),
+};
+
+// ── Platform (super_admin only) ───────────────────────────────
+export const platformApi = {
+  listTenants: () => api.get<PlatformTenant[]>('/platform/tenants').then((r) => r.data),
+  getTenant: (id: string) => api.get<PlatformTenant>(`/platform/tenants/${id}`).then((r) => r.data),
+  suspend: (id: string) => api.patch<PlatformTenant>(`/platform/tenants/${id}/suspend`).then((r) => r.data),
+  reactivate: (id: string) => api.patch<PlatformTenant>(`/platform/tenants/${id}/reactivate`).then((r) => r.data),
+  stats: () => api.get('/platform/stats').then((r) => r.data),
 };
 
 // ── Users ────────────────────────────────────────────────────

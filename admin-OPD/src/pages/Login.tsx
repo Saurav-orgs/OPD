@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { ApiError } from '../api/client';
 import { Field } from '../components/ui';
@@ -34,7 +34,7 @@ export default function Login() {
         <div className="login-logo">+</div>
         <h1 style={{ fontSize: 20 }}>OPD Admin</h1>
         <p className="muted" style={{ marginTop: 6, marginBottom: 24 }}>
-          Sign in to manage doctors, schedules and appointments.
+          Sign in to manage your practice and appointments.
         </p>
         <form onSubmit={onSubmit}>
           <Field label="Email">
@@ -65,6 +65,9 @@ export default function Login() {
             {busy ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+        <p className="muted" style={{ marginTop: 16, textAlign: 'center', fontSize: 14 }}>
+          New here? <Link to="/signup">Register your practice</Link>
+        </p>
       </div>
     </div>
   );

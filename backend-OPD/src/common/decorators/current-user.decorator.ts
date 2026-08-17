@@ -1,5 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { UserType } from '../enums';
+import { TenantStatus } from '../../database/models/tenant.model';
 
 /** The authenticated principal attached to the request by the JWT strategy. */
 export interface AuthUser {
@@ -7,6 +8,8 @@ export interface AuthUser {
   email: string;
   name: string;
   type: UserType;
+  tenantId: string | null;
+  tenantStatus: TenantStatus | null;
   roleId: string | null;
   doctorId: string | null;
   permissions: string[]; // "module:action" strings

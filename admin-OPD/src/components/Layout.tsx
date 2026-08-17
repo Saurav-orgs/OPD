@@ -13,7 +13,11 @@ export default function Layout() {
   // Close the mobile drawer whenever the route changes.
   useEffect(() => setDrawerOpen(false), [location.pathname]);
 
-  const items = NAV.filter((n) => can(n.module, 'read'));
+  const isPlatform = user?.type === 'super_admin';
+  const items = NAV.filter((n) => {
+    if (n.platformOnly && !isPlatform) return false;
+    return can(n.module, 'read');
+  });
 
   const getFormattedRole = (type?: string) => {
     if (!type) return '';

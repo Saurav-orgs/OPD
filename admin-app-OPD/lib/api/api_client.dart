@@ -148,6 +148,11 @@ class ApiClient {
     return LoginResponse.fromJson(data as Map<String, dynamic>);
   }
 
+  Future<LoginResponse> register(Map<String, dynamic> body) async {
+    final data = await _post('/auth/register', body);
+    return LoginResponse.fromJson(data as Map<String, dynamic>);
+  }
+
   Future<AuthUser> me() async =>
       AuthUser.fromJson(await _get('/auth/me') as Map<String, dynamic>);
 
@@ -279,4 +284,43 @@ class ApiClient {
   // ── Dashboard ──────────────────────────────────────────────
   Future<DashboardSummary> dashboard() async => DashboardSummary.fromJson(
       await _get('/dashboard') as Map<String, dynamic>);
+
+  // ── Tenant / Practice settings ─────────────────────────────
+  Future<Tenant> getTenant() async =>
+      Tenant.fromJson(await _get('/tenant') as Map<String, dynamic>);
+
+  Future<Tenant> updateTenant(Map<String, dynamic> body) async =>
+      Tenant.fromJson(await _patch('/tenant', body) as Map<String, dynamic>);
+
+  Future<Tenant> uploadLogo(File file) async {
+    final req = http.MultipartRequest('POST', _uri('/tenant/logo'));
+    if (tokens.token != null) {
+      req.headers['Authorization'] = 'Bearer ${tokens.token}';
+    }
+    req.files.add(await http.MultipartFile.fromPath('file', file.path,
+        contentType: _imageMediaType(file.path)));
+    final res = await http.Response.fromStream(await req.send());
+    return Tenant.fromJson(_decode(res) as Map<String, dynamic>);
+  }
+
+  Future<OnboardingChecklist> getOnboarding() async =>
+      OnboardingChecklist.fromJson(
+          await _get('/tenant/onboarding') as Map<String, dynamic>);
+
+  Future<void> goLive() => _post('/tenant/go-live');
+
+  // ── Platform (super_admin) ─────────────────────────────────
+  Future<List<Tenant>> listTenants() async =>
+      (await _get('/platform/tenants') as List)
+          .map((e) => Tenant.fromJson(e as Map<String, dynamic>))
+          .toList();
+
+  Future<Tenant> suspendTenant(String id) async =>
+      Tenant.fromJson(await _patch('/platform/tenants/$id/suspend') as Map<String, dynamic>);
+
+  Future<Tenant> reactivateTenant(String id) async =>
+      Tenant.fromJson(await _patch('/platform/tenants/$id/reactivate') as Map<String, dynamic>);
+
+  Future<Map<String, dynamic>> platformStats() async =>
+      (await _get('/platform/stats')) as Map<String, dynamic>;
 }

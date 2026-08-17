@@ -6,6 +6,7 @@ import '../api/models.dart';
 import '../auth/auth_scope.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'doctor_schedule_screen.dart';
 
 /// Doctor self-service. Edits are permission-gated server-side (doctors:update).
 class ProfileScreen extends StatefulWidget {
@@ -120,9 +121,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
               error: 'Could not load your profile.', onRetry: _reload);
         }
         final me = snap.data!;
+        final canSchedule = _auth.can('opd_schedules', 'read');
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (canSchedule) ...[
+              SectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const CardTitle('OPD schedule'),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Set your weekly working hours and leave days so patients can book slots.',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => DoctorScheduleScreen(
+                                doctorId: me.id, doctorName: me.name),
+                          ),
+                        ),
+                        icon: const Icon(Icons.schedule),
+                        label: const Text('Manage OPD schedule'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             if (!_canEdit)
               const Padding(
                 padding: EdgeInsets.only(bottom: 12),

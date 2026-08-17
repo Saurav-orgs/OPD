@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { doctorsApi } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
@@ -8,6 +9,7 @@ import { Empty, Field, Loading } from '../components/ui';
 /** Doctor self-service — edits are permission-gated server-side (doctors:update). */
 export default function Profile() {
   const { user, can } = useAuth();
+  const navigate = useNavigate();
   const toast = useToast();
   const qc = useQueryClient();
   const qrRef = useRef<HTMLInputElement>(null);
@@ -101,6 +103,17 @@ export default function Profile() {
         </div>
 
         <div className="stack">
+          {meQ.data && can('opd_schedules', 'read') && (
+            <div className="card">
+              <div className="card-title">OPD schedule</div>
+              <p className="muted" style={{ marginBottom: 12 }}>
+                Set your weekly working hours and leave days so patients can book slots.
+              </p>
+              <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={() => navigate(`/doctors/${meQ.data.id}/schedule`)}>
+                Manage OPD schedule
+              </button>
+            </div>
+          )}
           <div className="card">
             <div className="card-title">Profile photo</div>
             {meQ.data?.profile_photo_url ? (

@@ -29,6 +29,14 @@ export enum ErrorCode {
   FORBIDDEN = 'FORBIDDEN',
   ACCOUNT_DISABLED = 'ACCOUNT_DISABLED',
 
+  // Tenant / multi-tenancy
+  TENANT_SUSPENDED = 'TENANT_SUSPENDED',
+  TENANT_NOT_FOUND = 'TENANT_NOT_FOUND',
+  EMAIL_TAKEN = 'EMAIL_TAKEN',
+  SLUG_TAKEN = 'SLUG_TAKEN',
+  ONBOARDING_INCOMPLETE = 'ONBOARDING_INCOMPLETE',
+  SIGNUP_DISABLED = 'SIGNUP_DISABLED',
+
   // Generic
   VALIDATION_FAILED = 'VALIDATION_FAILED',
   NOT_FOUND = 'NOT_FOUND',
@@ -111,6 +119,30 @@ export const ERROR_CATALOG: Record<
   [ErrorCode.ACCOUNT_DISABLED]: {
     status: HttpStatus.FORBIDDEN,
     message: 'This account has been deactivated. Please contact an administrator.',
+  },
+  [ErrorCode.TENANT_SUSPENDED]: {
+    status: HttpStatus.FORBIDDEN,
+    message: 'This practice has been suspended. Please contact support.',
+  },
+  [ErrorCode.TENANT_NOT_FOUND]: {
+    status: HttpStatus.NOT_FOUND,
+    message: 'Practice not found.',
+  },
+  [ErrorCode.EMAIL_TAKEN]: {
+    status: HttpStatus.CONFLICT,
+    message: 'An account with this email already exists.',
+  },
+  [ErrorCode.SLUG_TAKEN]: {
+    status: HttpStatus.CONFLICT,
+    message: 'This practice URL is already in use. Please choose another.',
+  },
+  [ErrorCode.ONBOARDING_INCOMPLETE]: {
+    status: HttpStatus.BAD_REQUEST,
+    message: 'Please complete your practice setup before going live.',
+  },
+  [ErrorCode.SIGNUP_DISABLED]: {
+    status: HttpStatus.FORBIDDEN,
+    message: 'New registrations are currently disabled.',
   },
   [ErrorCode.VALIDATION_FAILED]: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,

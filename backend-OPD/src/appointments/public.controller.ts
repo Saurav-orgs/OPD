@@ -22,6 +22,7 @@ import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { DoctorsService } from '../doctors/doctors.service';
 import { SlotsService } from '../slots/slots.service';
+import { TenantSettingsService } from '../tenant/tenant-settings.service';
 import { Public } from '../common/decorators/public.decorator';
 import { BookingSource } from '../common/enums';
 import { AppException } from '../common/errors/app.exception';
@@ -35,6 +36,7 @@ export class PublicController {
     private readonly appointments: AppointmentsService,
     private readonly doctors: DoctorsService,
     private readonly slots: SlotsService,
+    private readonly tenantSettings: TenantSettingsService,
   ) {}
 
   @Get('doctors')
@@ -47,6 +49,12 @@ export class PublicController {
   @ApiOperation({ summary: 'Enabled doctor by public slug' })
   doctorBySlug(@Param('slug') slug: string) {
     return this.doctors.findEnabledBySlug(slug);
+  }
+
+  @Get('clinics/:slug')
+  @ApiOperation({ summary: 'Clinic landing page data by clinic slug' })
+  clinicBySlug(@Param('slug') slug: string) {
+    return this.tenantSettings.getBySlug(slug);
   }
 
   @Get('doctors/:id/slots')

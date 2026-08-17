@@ -20,7 +20,6 @@ import {
   BookingSource,
   ConsultationStatus,
   PaymentStatus,
-  UserType,
 } from '../common/enums';
 import { AuthUser } from '../common/decorators/current-user.decorator';
 
@@ -42,22 +41,19 @@ export class AppointmentsService {
     file: Express.Multer.File,
     source: BookingSource,
   ): Promise<Appointment> {
-    const doctor = await this.doctorModel.findByPk(dto.doctor_id);
+    const doctor = await this.doctorModel.findByPk(dto.doctor_id, { crossTenant: true } as any);
     if (!doctor || !doctor.is_enabled) {
       throw new AppException(ErrorCode.DOCTOR_DISABLED);
     }
 
-    // Validate slot (window / past / leave / exists) → derive end_time.
     const { endTime } = await this.slots.assertBookableSlot(
       dto.doctor_id,
       dto.appointment_date,
       dto.start_time,
     );
 
-    // Fail fast on an obviously-taken slot before spending an S3 upload.
     await this.assertSlotFree(dto.doctor_id, dto.appointment_date, dto.start_time);
 
-    // Validate + upload screenshot first; only persist the row on success.
     this.storage.validateImage(file);
     const { key } = await this.storage.uploadImage(
       file,
@@ -65,9 +61,10 @@ export class AppointmentsService {
     );
 
     try {
-      const appointment = await this.sequelize.transaction(async (t) => {
+      const appointment = (await this.sequelize.transaction(async (t) => {
         return this.appointmentModel.create(
           {
+            tenant_id: doctor.tenant_id,
             doctor_id: dto.doctor_id,
             appointment_date: dto.appointment_date,
             start_time: dto.start_time,
@@ -82,12 +79,11 @@ export class AppointmentsService {
             payment_status: PaymentStatus.PAID_UNVERIFIED,
             source,
           } as any,
-          { transaction: t },
+          { transaction: t, crossTenant: true } as any,
         );
-      });
+      })) as Appointment;
       return this.withDoctor(appointment.id);
     } catch (err) {
-      // Roll back the orphaned upload on any failure.
       await this.storage.delete(key);
       if (err instanceof UniqueConstraintError) {
         throw new AppException(ErrorCode.SLOT_ALREADY_BOOKED);
@@ -96,22 +92,18 @@ export class AppointmentsService {
     }
   }
 
+  /**
+   * List appointments scoped by the caller's tenant (injected via Sequelize hooks).
+   * The doctor's own view is the same as the tenant view — one doctor per tenant.
+   */
   async list(
     query: ListAppointmentsQueryDto,
     user: AuthUser,
   ): Promise<Appointment[]> {
     const where: any = {};
-    // Data scope: a doctor only ever sees their own appointments.
-    if (user.type === UserType.DOCTOR) {
-      if (!user.doctorId) return [];
-      where.doctor_id = user.doctorId;
-    } else if (query.doctorId) {
-      where.doctor_id = query.doctorId;
-    }
     if (query.date) where.appointment_date = query.date;
     if (query.status) where.status = query.status;
 
-    // Free-text search: match patient name or mobile (case-insensitive).
     const search = query.search?.trim();
     if (search) {
       const like = `%${search}%`;
@@ -133,7 +125,6 @@ export class AppointmentsService {
 
   async findOne(id: string, user: AuthUser) {
     const appointment = await this.withDoctor(id);
-    this.assertOwnership(appointment, user);
     const screenshotUrl = await this.storage.presignedGetUrl(
       appointment.payment_screenshot_url,
     );
@@ -146,25 +137,20 @@ export class AppointmentsService {
     user: AuthUser,
   ): Promise<Appointment> {
     const appointment = await this.findRaw(id);
-    this.assertOwnership(appointment, user);
     await appointment.update({ consultation_status: dto.status } as any);
     return this.withDoctor(id);
   }
 
-  /** Payment review (#2). Rejecting frees a future slot via the partial index. */
   async setPayment(
     id: string,
     dto: PaymentReviewDto,
     user: AuthUser,
   ): Promise<Appointment> {
     const appointment = await this.findRaw(id);
-    this.assertOwnership(appointment, user);
 
     if (dto.status === PaymentStatus.VERIFIED) {
       await appointment.update({ payment_status: PaymentStatus.VERIFIED } as any);
     } else {
-      // Rejected screenshot → drop the booking; the slot returns to available
-      // if still in the future (partial unique index no longer covers it).
       await appointment.update({
         payment_status: PaymentStatus.REJECTED,
         status: AppointmentStatus.REJECTED,
@@ -173,14 +159,12 @@ export class AppointmentsService {
     return this.withDoctor(id);
   }
 
-  /** Save the doctor's free-text note for a visit (empty string clears it). */
   async setNotes(
     id: string,
     dto: AppointmentNotesDto,
     user: AuthUser,
   ): Promise<Appointment> {
     const appointment = await this.findRaw(id);
-    this.assertOwnership(appointment, user);
     const notes = dto.notes.trim();
     await appointment.update({ doctor_notes: notes || null } as any);
     return this.withDoctor(id);
@@ -200,16 +184,15 @@ export class AppointmentsService {
         start_time: startTime,
         status: AppointmentStatus.CONFIRMED,
       },
-    });
+      crossTenant: true,
+    } as any);
     if (existing) throw new AppException(ErrorCode.SLOT_ALREADY_BOOKED);
   }
 
   private async findRaw(id: string): Promise<Appointment> {
     const appointment = await this.appointmentModel.findByPk(id);
     if (!appointment) {
-      throw new AppException(ErrorCode.NOT_FOUND, {
-        message: 'Appointment not found.',
-      });
+      throw new AppException(ErrorCode.NOT_FOUND, { message: 'Appointment not found.' });
     }
     return appointment;
   }
@@ -223,16 +206,5 @@ export class AppointmentsService {
         },
       ],
     })) as Appointment;
-  }
-
-  private assertOwnership(appointment: Appointment, user: AuthUser): void {
-    if (
-      user.type === UserType.DOCTOR &&
-      appointment.doctor_id !== user.doctorId
-    ) {
-      throw new AppException(ErrorCode.FORBIDDEN, {
-        message: 'You can only access your own appointments.',
-      });
-    }
   }
 }

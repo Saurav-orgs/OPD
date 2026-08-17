@@ -12,7 +12,7 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late Future<(DashboardSummary, int)> _future;
+  late Future<DashboardSummary> _future;
 
   @override
   void didChangeDependencies() {
@@ -20,17 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _future = _load();
   }
 
-  Future<(DashboardSummary, int)> _load() async {
-    final auth = AuthScope.of(context);
-    final summary = await auth.api.dashboard();
-    // Active-doctor count is only fetched if the role can read doctors.
-    var enabled = 0;
-    if (auth.can('doctors', 'read')) {
-      final docs = await auth.api.listDoctors();
-      enabled = docs.where((d) => d.isEnabled).length;
-    }
-    return (summary, enabled);
-  }
+  Future<DashboardSummary> _load() => AuthScope.of(context).api.dashboard();
 
   Future<void> _refresh() async {
     setState(() { _future = _load(); });
@@ -40,7 +30,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final user = AuthScope.of(context).user;
-    return FutureBuilder<(DashboardSummary, int)>(
+    return FutureBuilder<DashboardSummary>(
       future: _future,
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
@@ -50,7 +40,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return StateView(
               error: 'Could not load the dashboard.', onRetry: _refresh);
         }
-        final (data, enabledDoctors) = snap.data!;
+        final data = snap.data!;
         final hour = DateTime.now().hour;
         final greeting = hour < 12
             ? 'Good morning'
@@ -92,36 +82,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       icon: Icons.pause_circle_outline,
                       num: data.status('on_hold'),
                       label: 'On hold'),
-                  _Tile(
-                      accent: AppColors.booked,
-                      icon: Icons.medical_services_outlined,
-                      num: enabledDoctors,
-                      label: 'Active doctors'),
                 ],
-              ),
-              const SizedBox(height: 16),
-              SectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const CardTitle('By doctor · today'),
-                    if (data.byDoctor.isEmpty)
-                      const Text('No appointments today.',
-                          style: TextStyle(color: AppColors.textSecondary))
-                    else
-                      ...data.byDoctor.map((d) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(child: Text(d.name)),
-                                StatusBadge('info', label: '${d.count}'),
-                              ],
-                            ),
-                          )),
-                  ],
-                ),
               ),
               const SizedBox(height: 16),
               SectionCard(

@@ -11,6 +11,7 @@ export interface JwtPayload {
   sub: string;
   email: string;
   type: string;
+  tid: string | null; // tenantId (null for super_admin)
 }
 
 @Injectable()
@@ -26,7 +27,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  /** Re-hydrate the principal from the DB so permissions/active are current. */
+  /** Re-hydrate the principal from the DB so permissions/tenant status are current. */
   async validate(payload: JwtPayload): Promise<AuthUser> {
     const user = await this.usersService.buildAuthUser(payload.sub);
     if (!user) {

@@ -14,6 +14,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Permissions } from '../common/decorators/permissions.decorator';
 import { PermissionAction, PermissionModule } from '../common/enums';
+import { CurrentUser, AuthUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -23,8 +24,8 @@ export class UsersController {
 
   @Post()
   @Permissions({ module: PermissionModule.USERS, action: PermissionAction.CREATE })
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  create(@Body() dto: CreateUserDto, @CurrentUser() caller: AuthUser) {
+    return this.usersService.create(dto, caller.tenantId);
   }
 
   @Get()
@@ -44,8 +45,9 @@ export class UsersController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserDto,
+    @CurrentUser() caller: AuthUser,
   ) {
-    return this.usersService.update(id, dto);
+    return this.usersService.update(id, dto, caller.tenantId);
   }
 
   @Delete(':id')

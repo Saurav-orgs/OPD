@@ -9,6 +9,8 @@ class AuthUser {
   final String type; // super_admin | admin | doctor
   final String? roleId;
   final String? doctorId;
+  final String? tenantId;
+  final String? tenantStatus; // active | suspended
   final List<String> permissions; // "module:action"
 
   AuthUser({
@@ -18,6 +20,8 @@ class AuthUser {
     required this.type,
     this.roleId,
     this.doctorId,
+    this.tenantId,
+    this.tenantStatus,
     required this.permissions,
   });
 
@@ -28,6 +32,8 @@ class AuthUser {
         type: j['type'] as String? ?? 'admin',
         roleId: j['roleId'] as String?,
         doctorId: j['doctorId'] as String?,
+        tenantId: j['tenantId'] as String?,
+        tenantStatus: j['tenantStatus'] as String?,
         permissions:
             ((j['permissions'] as List?) ?? []).map((e) => '$e').toList(),
       );
@@ -350,30 +356,15 @@ class Appointment {
       );
 }
 
-class DoctorCount {
-  final String doctorId;
-  final String name;
-  final int count;
-  DoctorCount({required this.doctorId, required this.name, required this.count});
-
-  factory DoctorCount.fromJson(Map<String, dynamic> j) => DoctorCount(
-        doctorId: j['doctorId'] as String? ?? '',
-        name: j['name'] as String? ?? '',
-        count: (j['count'] as num?)?.toInt() ?? 0,
-      );
-}
-
 class DashboardSummary {
   final String date;
   final int total;
-  final List<DoctorCount> byDoctor;
   final Map<String, int> byStatus;
   final List<Appointment> appointments;
 
   DashboardSummary({
     required this.date,
     required this.total,
-    required this.byDoctor,
     required this.byStatus,
     required this.appointments,
   });
@@ -381,9 +372,6 @@ class DashboardSummary {
   factory DashboardSummary.fromJson(Map<String, dynamic> j) => DashboardSummary(
         date: j['date'] as String? ?? '',
         total: (j['total'] as num?)?.toInt() ?? 0,
-        byDoctor: ((j['byDoctor'] as List?) ?? [])
-            .map((d) => DoctorCount.fromJson(d as Map<String, dynamic>))
-            .toList(),
         byStatus: ((j['byStatus'] as Map?) ?? {}).map(
           (k, v) => MapEntry('$k', (v as num?)?.toInt() ?? 0),
         ),
@@ -393,4 +381,68 @@ class DashboardSummary {
       );
 
   int status(String key) => byStatus[key] ?? 0;
+}
+
+class Tenant {
+  final String id;
+  final String name;
+  final String slug;
+  final String? contactEmail;
+  final String? contactPhone;
+  final String? address;
+  final String? logoUrl;
+  final String timezone;
+  final String status;
+
+  Tenant({
+    required this.id,
+    required this.name,
+    required this.slug,
+    this.contactEmail,
+    this.contactPhone,
+    this.address,
+    this.logoUrl,
+    required this.timezone,
+    required this.status,
+  });
+
+  factory Tenant.fromJson(Map<String, dynamic> j) => Tenant(
+        id: j['id'] as String,
+        name: j['name'] as String? ?? '',
+        slug: j['slug'] as String? ?? '',
+        contactEmail: j['contact_email'] as String?,
+        contactPhone: j['contact_phone'] as String?,
+        address: j['address'] as String?,
+        logoUrl: j['logo_url'] as String?,
+        timezone: j['timezone'] as String? ?? 'Asia/Kolkata',
+        status: j['status'] as String? ?? 'active',
+      );
+}
+
+class OnboardingChecklist {
+  final bool profile;
+  final bool photo;
+  final bool consultationFee;
+  final bool paymentQr;
+  final bool schedule;
+  final bool complete;
+
+  OnboardingChecklist({
+    required this.profile,
+    required this.photo,
+    required this.consultationFee,
+    required this.paymentQr,
+    required this.schedule,
+    required this.complete,
+  });
+
+  factory OnboardingChecklist.fromJson(Map<String, dynamic> j) =>
+      OnboardingChecklist(
+        profile: j['profile'] as bool? ?? false,
+        photo: j['photo'] as bool? ?? false,
+        consultationFee: j['consultation_fee'] as bool? ?? false,
+        paymentQr: j['payment_qr'] as bool? ?? false,
+        schedule: j['schedule'] as bool? ?? false,
+        complete: j['complete'] as bool? ?? false,
+      );
 }

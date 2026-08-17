@@ -8,6 +8,7 @@ import {
 } from 'sequelize-typescript';
 import { ScheduleExceptionType } from '../../common/enums';
 import { Doctor } from './doctor.model';
+import { Tenant } from './tenant.model';
 
 /** Leave / holidays / one-off schedule changes for a specific date. */
 @Table({
@@ -22,6 +23,10 @@ export class ScheduleException extends Model<ScheduleException> {
     primaryKey: true,
   })
   id: string;
+
+  @ForeignKey(() => Tenant)
+  @Column({ type: DataType.UUID, allowNull: false })
+  tenant_id: string;
 
   @ForeignKey(() => Doctor)
   @Column({ type: DataType.UUID, allowNull: false })
@@ -45,6 +50,9 @@ export class ScheduleException extends Model<ScheduleException> {
 
   @Column({ type: DataType.STRING, allowNull: true })
   reason: string | null;
+
+  @BelongsTo(() => Tenant)
+  tenant: Tenant;
 
   @BelongsTo(() => Doctor)
   doctor: Doctor;

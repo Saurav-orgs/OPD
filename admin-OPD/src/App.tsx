@@ -3,6 +3,8 @@ import { useAuth } from './auth/AuthContext';
 import { Loading } from './components/ui';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Onboarding from './pages/Onboarding';
 import Dashboard from './pages/Dashboard';
 import Appointments from './pages/Appointments';
 import Doctors from './pages/Doctors';
@@ -10,6 +12,8 @@ import DoctorSchedule from './pages/DoctorSchedule';
 import Users from './pages/Users';
 import Roles from './pages/Roles';
 import Profile from './pages/Profile';
+import PracticeSettings from './pages/PracticeSettings';
+import PlatformTenants from './pages/PlatformTenants';
 import type { ReactNode } from 'react';
 
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -21,11 +25,9 @@ function RequireAuth({ children }: { children: ReactNode }) {
 
 /** Landing route: first module the user can see. */
 function Home() {
-  const { can, user } = useAuth();
+  const { can } = useAuth();
   if (can('dashboard', 'read')) return <Navigate to="/dashboard" replace />;
   if (can('appointments', 'read')) return <Navigate to="/appointments" replace />;
-  if (can('doctors', 'read')) return <Navigate to="/doctors" replace />;
-  if (user?.type === 'doctor') return <Navigate to="/profile" replace />;
   return <Navigate to="/appointments" replace />;
 }
 
@@ -36,6 +38,15 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
+      <Route
+        path="/onboarding"
+        element={
+          <RequireAuth>
+            <Onboarding />
+          </RequireAuth>
+        }
+      />
       <Route
         element={
           <RequireAuth>
@@ -51,6 +62,8 @@ export default function App() {
         <Route path="/users" element={<Users />} />
         <Route path="/roles" element={<Roles />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/practice" element={<PracticeSettings />} />
+        <Route path="/platform/tenants" element={<PlatformTenants />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
