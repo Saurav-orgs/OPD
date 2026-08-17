@@ -37,6 +37,13 @@ export enum ErrorCode {
   ONBOARDING_INCOMPLETE = 'ONBOARDING_INCOMPLETE',
   SIGNUP_DISABLED = 'SIGNUP_DISABLED',
 
+  // Patient auth (OTP)
+  OTP_INVALID = 'OTP_INVALID',
+  OTP_EXPIRED = 'OTP_EXPIRED',
+  OTP_TOO_MANY_ATTEMPTS = 'OTP_TOO_MANY_ATTEMPTS',
+  PATIENT_NOT_FOUND = 'PATIENT_NOT_FOUND',
+  PROFILE_INCOMPLETE = 'PROFILE_INCOMPLETE',
+
   // Generic
   VALIDATION_FAILED = 'VALIDATION_FAILED',
   NOT_FOUND = 'NOT_FOUND',
@@ -143,6 +150,26 @@ export const ERROR_CATALOG: Record<
   [ErrorCode.SIGNUP_DISABLED]: {
     status: HttpStatus.FORBIDDEN,
     message: 'New registrations are currently disabled.',
+  },
+  [ErrorCode.OTP_INVALID]: {
+    status: HttpStatus.UNAUTHORIZED,
+    message: 'That code is not correct. Please check and try again.',
+  },
+  [ErrorCode.OTP_EXPIRED]: {
+    status: HttpStatus.UNAUTHORIZED,
+    message: 'That code has expired. Please request a new one.',
+  },
+  [ErrorCode.OTP_TOO_MANY_ATTEMPTS]: {
+    status: HttpStatus.TOO_MANY_REQUESTS,
+    message: 'Too many incorrect attempts. Please request a new code.',
+  },
+  [ErrorCode.PATIENT_NOT_FOUND]: {
+    status: HttpStatus.NOT_FOUND,
+    message: 'We could not find your patient record.',
+  },
+  [ErrorCode.PROFILE_INCOMPLETE]: {
+    status: HttpStatus.BAD_REQUEST,
+    message: 'Please complete your profile (name, age and gender) first.',
   },
   [ErrorCode.VALIDATION_FAILED]: {
     status: HttpStatus.UNPROCESSABLE_ENTITY,

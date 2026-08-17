@@ -16,6 +16,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { TenantModule } from './tenant/tenant.module';
 import { PlatformModule } from './platform/platform.module';
+import { PatientModule } from './patient/patient.module';
 import { HealthController } from './health/health.controller';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { TenantGuard } from './common/guards/tenant.guard';
@@ -58,6 +59,7 @@ import { TenantInterceptor } from './tenant/tenant.interceptor';
     AppointmentsModule,
     DashboardModule,
     PlatformModule,
+    PatientModule,
   ],
   controllers: [HealthController],
   providers: [

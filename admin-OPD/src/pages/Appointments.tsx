@@ -240,6 +240,17 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
           <div className="stack">
             <Detail label="Patient" value={a.patient_name} />
             <Detail label="Mobile" value={a.patient_mobile} />
+            {(a.patient_age != null || a.patient_gender) && (
+              <Detail
+                label="Age / gender"
+                value={[
+                  a.patient_age != null ? `${a.patient_age} yrs` : null,
+                  a.patient_gender ?? null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              />
+            )}
             <Detail label="Date & time" value={`${a.appointment_date} · ${a.start_time?.slice(0, 5)}–${a.end_time?.slice(0, 5)}`} />
             <Detail label="Doctor" value={a.doctor?.name ?? '—'} />
             {a.patient_address && <Detail label="Address" value={a.patient_address} />}
@@ -265,6 +276,41 @@ function DetailModal({ id, onClose }: { id: string; onClose: () => void }) {
                 </a>
               ) : (
                 <span className="muted">No screenshot.</span>
+              )}
+            </div>
+
+            <div>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>
+                Patient reports {a.reports?.length ? `(${a.reports.length})` : ''}
+              </div>
+              {!a.reports?.length ? (
+                <span className="muted">No reports uploaded.</span>
+              ) : (
+                <div className="stack" style={{ gap: 6 }}>
+                  {a.reports.map((r) => (
+                    <a
+                      key={r.id}
+                      href={r.view_url ?? '#'}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="row"
+                      style={{
+                        gap: 8,
+                        padding: '8px 10px',
+                        border: 'var(--hairline)',
+                        borderRadius: 8,
+                        textDecoration: 'none',
+                        color: 'inherit',
+                      }}
+                    >
+                      <span aria-hidden>{r.mime_type === 'application/pdf' ? '📄' : '🖼'}</span>
+                      <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {r.file_name}
+                      </span>
+                      <span className="muted" style={{ fontSize: 12 }}>Open</span>
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
           </div>

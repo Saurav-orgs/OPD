@@ -324,3 +324,12 @@ class ApiClient {
   Future<Map<String, dynamic>> platformStats() async =>
       (await _get('/platform/stats')) as Map<String, dynamic>;
 }
+
+/// Booking QR + patient report helpers.
+extension DoctorQrApi on ApiClient {
+  Future<BookingQr> myBookingQr() async =>
+      BookingQr.fromJson(await _get('/doctors/me/booking-qr') as Map<String, dynamic>);
+
+  Future<BookingQr> doctorBookingQr(String id) async =>
+      BookingQr.fromJson(await _get('/doctors/$id/booking-qr') as Map<String, dynamic>);
+}

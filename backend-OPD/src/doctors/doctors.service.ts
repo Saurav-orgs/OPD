@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
+import { ConfigService } from '@nestjs/config';
+import * as QRCode from 'qrcode';
 import { Doctor } from '../database/models/doctor.model';
 import { Tenant, TenantStatus } from '../database/models/tenant.model';
 import { CreateDoctorDto, UpdateDoctorDto } from './dto/doctor.dto';
@@ -15,7 +17,41 @@ export class DoctorsService {
     @InjectModel(Doctor) private readonly doctorModel: typeof Doctor,
     @InjectModel(Tenant) private readonly tenantModel: typeof Tenant,
     private readonly storage: StorageService,
+    private readonly config: ConfigService,
   ) {}
+
+  // ── Shareable booking QR ───────────────────────────────────
+
+  /**
+   * QR encoding the doctor's public booking page, for sharing on WhatsApp etc.
+   * Generated on demand rather than stored — the slug is the only input, so
+   * there is nothing to keep in sync.
+   *
+   * Distinct from `payment_qr_url`, which is the UPI QR the doctor uploads.
+   */
+  async bookingQr(doctorId: string) {
+    const doctor = await this.getOrFail(doctorId);
+    const url = `${this.config.get<string>('patientWebUrl')}/doctor/${doctor.public_slug}`;
+    const qrDataUrl = await QRCode.toDataURL(url, {
+      width: 512,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+    });
+    return {
+      url,
+      qr_data_url: qrDataUrl,
+      share_text: `Book an appointment with ${doctor.name}: ${url}`,
+    };
+  }
+
+  async bookingQrOwn(user: AuthUser) {
+    if (!user.doctorId) {
+      throw new AppException(ErrorCode.FORBIDDEN, {
+        message: 'This account is not linked to a doctor profile.',
+      });
+    }
+    return this.bookingQr(user.doctorId);
+  }
 
   // ── Tenant self-service ────────────────────────────────────
 

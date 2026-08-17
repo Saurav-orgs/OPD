@@ -1,12 +1,96 @@
 import axios, { AxiosError } from 'axios';
 import { AppConfig } from './config';
-import type { Doctor, DaySlots, BookingResult } from './types';
+import type {
+  Doctor,
+  DaySlots,
+  BookingResult,
+  Patient,
+  PatientAppointment,
+  PatientReport,
+  Clinic,
+} from './types';
 import { ApiException } from './types';
+
+const TOKEN_KEY = 'opd_patient_token';
+
+export const patientToken = {
+  get: () => localStorage.getItem(TOKEN_KEY),
+  set: (t: string) => localStorage.setItem(TOKEN_KEY, t),
+  clear: () => localStorage.removeItem(TOKEN_KEY),
+};
 
 const client = axios.create({
   baseURL: AppConfig.apiBaseUrl,
   timeout: 15000,
 });
+
+client.interceptors.request.use((config) => {
+  const token = patientToken.get();
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+function mapClinic(c: any): Clinic | null {
+  if (!c) return null;
+  return {
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    logoUrl: c.logo_url ?? null,
+    address: c.address ?? null,
+    contactPhone: c.contact_phone ?? null,
+  };
+}
+
+function mapDoctor(d: any): Doctor {
+  return {
+    id: d.id,
+    name: d.name,
+    specialization: d.specialization,
+    qualifications: d.qualifications,
+    bio: d.bio,
+    consultationFee: d.consultation_fee != null ? String(d.consultation_fee) : null,
+    profilePhotoUrl: d.profile_photo_url,
+    paymentQrUrl: d.payment_qr_url,
+    publicSlug: d.public_slug || '',
+    clinic: mapClinic(d.clinic),
+  };
+}
+
+function mapReport(r: any): PatientReport {
+  return {
+    id: r.id,
+    fileName: r.file_name,
+    mimeType: r.mime_type,
+    sizeBytes: r.size_bytes ?? 0,
+    createdAt: r.created_at ?? null,
+    viewUrl: r.view_url ?? null,
+  };
+}
+
+function mapAppointment(a: any): PatientAppointment {
+  return {
+    id: a.id,
+    appointmentDate: a.appointment_date,
+    startTime: (a.start_time || '').slice(0, 5),
+    endTime: (a.end_time || '').slice(0, 5),
+    status: a.status,
+    consultationStatus: a.consultation_status,
+    paymentStatus: a.payment_status,
+    description: a.description,
+    doctorNotes: a.doctor_notes,
+    doctor: a.doctor
+      ? {
+          id: a.doctor.id,
+          name: a.doctor.name,
+          specialization: a.doctor.specialization,
+          publicSlug: a.doctor.public_slug,
+        }
+      : null,
+    clinic: a.clinic ?? null,
+    reports: (a.reports || []).map(mapReport),
+  };
+}
 
 function handleAxiosError(err: unknown): never {
   if (axios.isAxiosError(err)) {
@@ -37,17 +121,7 @@ export const api = {
     try {
       const res = await client.get('/public/doctors');
       const rawList = res.data.data ?? res.data;
-      return rawList.map((d: any) => ({
-        id: d.id,
-        name: d.name,
-        specialization: d.specialization,
-        qualifications: d.qualifications,
-        bio: d.bio,
-        consultationFee: d.consultation_fee != null ? String(d.consultation_fee) : null,
-        profilePhotoUrl: d.profile_photo_url,
-        paymentQrUrl: d.payment_qr_url,
-        publicSlug: d.public_slug || '',
-      }));
+      return rawList.map(mapDoctor);
     } catch (err) {
       handleAxiosError(err);
     }
@@ -56,18 +130,95 @@ export const api = {
   async doctorByIdOrSlug(idOrSlug: string): Promise<Doctor> {
     try {
       const res = await client.get(`/public/doctors/${idOrSlug}`);
+      return mapDoctor(res.data.data ?? res.data);
+    } catch (err) {
+      handleAxiosError(err);
+    }
+  },
+
+  // ── Patient auth (OTP) ──────────────────────────────────────
+  async requestOtp(mobile: string): Promise<{ expiresInSeconds: number }> {
+    try {
+      const res = await client.post('/patient/auth/request-otp', { mobile });
       const d = res.data.data ?? res.data;
-      return {
-        id: d.id,
-        name: d.name,
-        specialization: d.specialization,
-        qualifications: d.qualifications,
-        bio: d.bio,
-        consultationFee: d.consultation_fee != null ? String(d.consultation_fee) : null,
-        profilePhotoUrl: d.profile_photo_url,
-        paymentQrUrl: d.payment_qr_url,
-        publicSlug: d.public_slug || '',
-      };
+      return { expiresInSeconds: d.expiresInSeconds ?? 300 };
+    } catch (err) {
+      handleAxiosError(err);
+    }
+  },
+
+  async verifyOtp(
+    mobile: string,
+    code: string
+  ): Promise<{ accessToken: string; patient: Patient | null; isNew: boolean }> {
+    try {
+      const res = await client.post('/patient/auth/verify-otp', { mobile, code });
+      const d = res.data.data ?? res.data;
+      return { accessToken: d.accessToken, patient: d.patient, isNew: d.isNew };
+    } catch (err) {
+      handleAxiosError(err);
+    }
+  },
+
+  // ── Patient self-service ────────────────────────────────────
+  async me(): Promise<{ mobile: string; registered: boolean; patient: Patient | null }> {
+    try {
+      const res = await client.get('/patient/me');
+      return res.data.data ?? res.data;
+    } catch (err) {
+      handleAxiosError(err);
+    }
+  },
+
+  async updateMe(body: {
+    name?: string;
+    age?: number;
+    gender?: string;
+  }): Promise<Patient> {
+    try {
+      const res = await client.patch('/patient/me', body);
+      return res.data.data ?? res.data;
+    } catch (err) {
+      handleAxiosError(err);
+    }
+  },
+
+  async myAppointments(): Promise<PatientAppointment[]> {
+    try {
+      const res = await client.get('/patient/appointments');
+      return (res.data.data ?? res.data).map(mapAppointment);
+    } catch (err) {
+      handleAxiosError(err);
+    }
+  },
+
+  async myAppointment(id: string): Promise<PatientAppointment> {
+    try {
+      const res = await client.get(`/patient/appointments/${id}`);
+      return mapAppointment(res.data.data ?? res.data);
+    } catch (err) {
+      handleAxiosError(err);
+    }
+  },
+
+  async uploadReport(appointmentId: string, file: File): Promise<PatientReport> {
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await client.post(
+        `/patient/appointments/${appointmentId}/reports`,
+        fd,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      return mapReport(res.data.data ?? res.data);
+    } catch (err) {
+      handleAxiosError(err);
+    }
+  },
+
+  async deleteReport(reportId: string): Promise<void> {
+    try {
+      await client.delete(`/patient/reports/${reportId}`);
     } catch (err) {
       handleAxiosError(err);
     }

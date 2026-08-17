@@ -14,6 +14,7 @@ import {
 } from '../../common/enums';
 import { Doctor } from './doctor.model';
 import { Tenant } from './tenant.model';
+import { Patient } from './patient.model';
 
 @Table({
   tableName: 'appointments',
@@ -35,6 +36,15 @@ export class Appointment extends Model<Appointment> {
   @ForeignKey(() => Doctor)
   @Column({ type: DataType.UUID, allowNull: false })
   doctor_id: string;
+
+  /**
+   * Links to the global patient registry. Nullable: legacy rows and anonymous
+   * public bookings may predate a patient record. The patient_name/mobile
+   * columns below stay as a point-in-time snapshot of the booking.
+   */
+  @ForeignKey(() => Patient)
+  @Column({ type: DataType.UUID, allowNull: true })
+  patient_id: string | null;
 
   @Column({ type: DataType.DATEONLY, allowNull: false })
   appointment_date: string;
@@ -95,4 +105,7 @@ export class Appointment extends Model<Appointment> {
 
   @BelongsTo(() => Doctor)
   doctor: Doctor;
+
+  @BelongsTo(() => Patient)
+  patient: Patient;
 }

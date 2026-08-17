@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../api/api_client.dart';
 import '../api/models.dart';
 import '../auth/auth_scope.dart';
@@ -390,6 +391,14 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                     children: [
                       _row('Patient', a.patientName),
                       _row('Mobile', a.patientMobile),
+                      if (a.patientAge != null || a.patientGender != null)
+                        _row(
+                          'Age / gender',
+                          [
+                            if (a.patientAge != null) '${a.patientAge} yrs',
+                            if (a.patientGender != null) a.patientGender!,
+                          ].join(' · '),
+                        ),
                       _row('Date & time',
                           '${a.appointmentDate} · ${a.startTime}–${a.endTime}'),
                       _row('Doctor', a.doctor?.name ?? '—'),
@@ -440,6 +449,8 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 16),
+                _reportsCard(a),
                 if (canUpdate) ...[
                   const SizedBox(height: 16),
                   _reviewCard(a),
@@ -492,6 +503,64 @@ class _AppointmentDetailScreenState extends State<AppointmentDetailScreen> {
                 color: (a.doctorNotes != null && a.doctorNotes!.isNotEmpty)
                     ? AppColors.text
                     : AppColors.textSecondary,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// Reports the patient uploaded for this visit, opened via presigned URLs.
+  Widget _reportsCard(Appointment a) {
+    return SectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CardTitle('Patient reports'
+              '${a.reports.isNotEmpty ? ' (${a.reports.length})' : ''}'),
+          const SizedBox(height: 8),
+          if (a.reports.isEmpty)
+            const Text('No reports uploaded.',
+                style: TextStyle(color: AppColors.textSecondary))
+          else
+            ...a.reports.map(
+              (r) => Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(r.isPdf ? Icons.picture_as_pdf : Icons.image_outlined,
+                        size: 20, color: AppColors.primary),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(r.fileName,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.w500)),
+                          Text(r.sizeLabel,
+                              style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                    if (r.viewUrl != null)
+                      IconButton(
+                        tooltip: 'Open',
+                        icon: const Icon(Icons.open_in_new, size: 18),
+                        onPressed: () => launchUrl(Uri.parse(r.viewUrl!),
+                            mode: LaunchMode.externalApplication),
+                      ),
+                  ],
+                ),
               ),
             ),
         ],

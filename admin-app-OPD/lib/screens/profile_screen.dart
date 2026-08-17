@@ -7,6 +7,7 @@ import '../auth/auth_scope.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'doctor_schedule_screen.dart';
+import '../widgets/booking_qr_card.dart';
 
 /// Doctor self-service. Edits are permission-gated server-side (doctors:update).
 class ProfileScreen extends StatefulWidget {
@@ -125,6 +126,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            const BookingQrCard(),
+            const SizedBox(height: 12),
             if (canSchedule) ...[
               SectionCard(
                 child: Column(

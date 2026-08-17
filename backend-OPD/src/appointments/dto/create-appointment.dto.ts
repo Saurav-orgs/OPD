@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsOptional,
   IsString,
@@ -6,6 +7,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { normalizeMobile } from '../../patient/mobile.util';
 
 /**
  * Public booking payload (multipart — the screenshot file is separate).
@@ -38,6 +40,10 @@ export class CreateAppointmentDto {
   patient_name: string;
 
   @ApiProperty({ example: '9876543210' })
+  // Accept the shapes people actually type ("+91 98765 43210", "098765 43210")
+  // and let normalizeMobile() canonicalise — the mobile is the patient's
+  // identity, so a formatting difference must never create a second person.
+  @Transform(({ value }) => normalizeMobile(String(value ?? '')))
   @Matches(/^[6-9]\d{9}$/, {
     message: 'Please enter a valid 10-digit mobile number.',
   })

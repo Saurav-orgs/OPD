@@ -114,3 +114,10 @@ void showErrorSnack(BuildContext context, String message) {
       behavior: SnackBarBehavior.floating,
     ));
 }
+
+/// Success counterpart to [showErrorSnack].
+void showSuccessSnack(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message), backgroundColor: AppColors.secondary),
+  );
+}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Search, X, Stethoscope, ArrowRight, ShieldCheck, Clock, CheckCircle } from 'lucide-react';
+import { Search, X, Stethoscope, ArrowRight, ShieldCheck, Clock, CheckCircle, Building2 } from 'lucide-react';
 import { api } from '../api';
 import type { Doctor } from '../types';
 import { NetworkAvatar } from '../components/NetworkAvatar';
@@ -26,7 +26,9 @@ export const DoctorList: React.FC = () => {
     const q = query.toLowerCase();
     return (
       d.name.toLowerCase().includes(q) ||
-      (d.specialization && d.specialization.toLowerCase().includes(q))
+      (d.specialization && d.specialization.toLowerCase().includes(q)) ||
+      // Patients often search by the clinic they know rather than the doctor.
+      (d.clinic?.name && d.clinic.name.toLowerCase().includes(q))
     );
   });
 
@@ -131,6 +133,30 @@ const DoctorCardItem: React.FC<{ doctor: Doctor; onClick: () => void }> = ({
 
         {doctor.qualifications && (
           <div className="doctor-qual">{doctor.qualifications}</div>
+        )}
+
+        {doctor.clinic?.name && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 12.5,
+              color: 'var(--muted, #64748B)',
+              marginTop: 4,
+            }}
+          >
+            <Building2 size={12} />
+            <span
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {doctor.clinic.name}
+            </span>
+          </div>
         )}
 
         <div className="doctor-bottom-row">

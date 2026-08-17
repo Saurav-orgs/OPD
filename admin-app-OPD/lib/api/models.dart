@@ -311,6 +311,9 @@ class Appointment {
   final String? source;
   final DoctorRef? doctor;
   final String? screenshotUrl; // presigned, only on detail
+  final int? patientAge;
+  final String? patientGender;
+  final List<PatientReport> reports;
 
   Appointment({
     required this.id,
@@ -329,6 +332,9 @@ class Appointment {
     this.source,
     this.doctor,
     this.screenshotUrl,
+    this.patientAge,
+    this.patientGender,
+    this.reports = const [],
   });
 
   static String _hhmm(String? t) =>
@@ -353,6 +359,11 @@ class Appointment {
             ? null
             : DoctorRef.fromJson(j['doctor'] as Map<String, dynamic>),
         screenshotUrl: j['screenshot_url'] as String?,
+        patientAge: (j['patient_age'] as num?)?.toInt(),
+        patientGender: j['patient_gender'] as String?,
+        reports: ((j['reports'] as List?) ?? [])
+            .map((r) => PatientReport.fromJson(r as Map<String, dynamic>))
+            .toList(),
       );
 }
 
@@ -444,5 +455,58 @@ class OnboardingChecklist {
         paymentQr: j['payment_qr'] as bool? ?? false,
         schedule: j['schedule'] as bool? ?? false,
         complete: j['complete'] as bool? ?? false,
+      );
+}
+
+
+/// A medical report the patient uploaded for an appointment.
+class PatientReport {
+  final String id;
+  final String fileName;
+  final String mimeType;
+  final int sizeBytes;
+  final String? viewUrl;
+
+  PatientReport({
+    required this.id,
+    required this.fileName,
+    required this.mimeType,
+    required this.sizeBytes,
+    this.viewUrl,
+  });
+
+  factory PatientReport.fromJson(Map<String, dynamic> j) => PatientReport(
+        id: j['id'] as String,
+        fileName: j['file_name'] as String? ?? 'report',
+        mimeType: j['mime_type'] as String? ?? '',
+        sizeBytes: (j['size_bytes'] as num?)?.toInt() ?? 0,
+        viewUrl: j['view_url'] as String?,
+      );
+
+  bool get isPdf => mimeType == 'application/pdf';
+
+  String get sizeLabel {
+    if (sizeBytes < 1024) return '$sizeBytes B';
+    if (sizeBytes < 1024 * 1024) return '${(sizeBytes / 1024).round()} KB';
+    return '${(sizeBytes / 1048576).toStringAsFixed(1)} MB';
+  }
+}
+
+/// Shareable QR for a doctor's public booking page.
+class BookingQr {
+  final String url;
+  final String qrDataUrl;
+  final String shareText;
+
+  BookingQr({
+    required this.url,
+    required this.qrDataUrl,
+    required this.shareText,
+  });
+
+  factory BookingQr.fromJson(Map<String, dynamic> j) => BookingQr(
+        url: j['url'] as String? ?? '',
+        qrDataUrl: j['qr_data_url'] as String? ?? '',
+        shareText: j['share_text'] as String? ?? '',
       );
 }

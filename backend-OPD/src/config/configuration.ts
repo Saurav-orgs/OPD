@@ -5,6 +5,8 @@ export interface AppConfig {
   clinicTimezone: string;
   bookingWindowDays: number;
   maxUploadSizeMb: number;
+  /** Public patient portal origin — used to build shareable booking links/QRs. */
+  patientWebUrl: string;
   jwt: { secret: string; expiresIn: string };
   superAdmin: { email: string; password: string; name: string };
   database: {
@@ -35,6 +37,10 @@ export default (): AppConfig => ({
   clinicTimezone: process.env.CLINIC_TIMEZONE || 'Asia/Kolkata',
   bookingWindowDays: parseInt(process.env.BOOKING_WINDOW_DAYS || '7', 10),
   maxUploadSizeMb: parseInt(process.env.MAX_UPLOAD_SIZE_MB || '5', 10),
+  patientWebUrl: (process.env.PATIENT_WEB_URL || 'http://localhost:5175').replace(
+    /\/$/,
+    '',
+  ),
   jwt: {
     secret: process.env.JWT_SECRET || 'change-me',
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',

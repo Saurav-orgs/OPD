@@ -58,6 +58,12 @@ export class DoctorsController {
     return this.doctorsService.updateOwn(user, dto);
   }
 
+  @Get('me/booking-qr')
+  @ApiOperation({ summary: "Shareable QR for the doctor's public booking page" })
+  bookingQrOwn(@CurrentUser() user: AuthUser) {
+    return this.doctorsService.bookingQrOwn(user);
+  }
+
   @Post('me/qr')
   @ApiOperation({ summary: 'Doctor uploads own payment QR' })
   @Permissions({ module: PermissionModule.DOCTORS, action: PermissionAction.UPDATE })
@@ -102,6 +108,13 @@ export class DoctorsController {
   @Permissions({ module: PermissionModule.DOCTORS, action: PermissionAction.READ })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.doctorsService.findOne(id);
+  }
+
+  @Get(':id/booking-qr')
+  @ApiOperation({ summary: 'Shareable booking QR for a doctor' })
+  @Permissions({ module: PermissionModule.DOCTORS, action: PermissionAction.READ })
+  bookingQr(@Param('id', ParseUUIDPipe) id: string) {
+    return this.doctorsService.bookingQr(id);
   }
 
   @Patch(':id')

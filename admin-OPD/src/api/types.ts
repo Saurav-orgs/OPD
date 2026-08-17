@@ -133,6 +133,25 @@ export interface Appointment {
   createdAt?: string;
   doctor?: Pick<Doctor, 'id' | 'name' | 'specialization' | 'consultation_fee'>;
   screenshot_url?: string;
+  /** Registered demographics from the patient registry. */
+  patient_age?: number | null;
+  patient_gender?: string | null;
+  reports?: PatientReport[];
+}
+
+export interface PatientReport {
+  id: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  created_at: string | null;
+  view_url: string | null;
+}
+
+export interface BookingQr {
+  url: string;
+  qr_data_url: string;
+  share_text: string;
 }
 
 export interface DashboardSummary {

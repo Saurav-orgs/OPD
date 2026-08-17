@@ -8,6 +8,7 @@ import { Doctor } from '../database/models/doctor.model';
 import { SlotsModule } from '../slots/slots.module';
 import { DoctorsModule } from '../doctors/doctors.module';
 import { TenantModule } from '../tenant/tenant.module';
+import { PatientModule } from '../patient/patient.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { TenantModule } from '../tenant/tenant.module';
     SlotsModule,
     DoctorsModule,
     TenantModule,
+    PatientModule,
   ],
   controllers: [AppointmentsController, PublicController],
   providers: [AppointmentsService],

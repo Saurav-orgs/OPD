@@ -22,6 +22,8 @@ import {
   PaymentStatus,
 } from '../common/enums';
 import { AuthUser } from '../common/decorators/current-user.decorator';
+import { PatientService } from '../patient/patient.service';
+import { normalizeMobile } from '../patient/mobile.util';
 
 @Injectable()
 export class AppointmentsService {
@@ -32,6 +34,7 @@ export class AppointmentsService {
     @InjectModel(Doctor) private readonly doctorModel: typeof Doctor,
     private readonly slots: SlotsService,
     private readonly storage: StorageService,
+    private readonly patients: PatientService,
     private readonly sequelize: Sequelize,
   ) {}
 
@@ -60,17 +63,28 @@ export class AppointmentsService {
       `appointments/${dto.doctor_id}`,
     );
 
+    // Every booking resolves to one global patient identity, keyed by the
+    // normalised mobile, so the patient can later find this visit from any
+    // clinic they have used.
+    const mobile = normalizeMobile(dto.patient_mobile);
+
     try {
       const appointment = (await this.sequelize.transaction(async (t) => {
+        const patient = await this.patients.resolveOrCreate(
+          mobile,
+          dto.patient_name,
+          t,
+        );
         return this.appointmentModel.create(
           {
             tenant_id: doctor.tenant_id,
             doctor_id: dto.doctor_id,
+            patient_id: patient.id,
             appointment_date: dto.appointment_date,
             start_time: dto.start_time,
             end_time: endTime,
             patient_name: dto.patient_name,
-            patient_mobile: dto.patient_mobile,
+            patient_mobile: mobile,
             patient_address: dto.patient_address ?? null,
             description: dto.description ?? null,
             payment_screenshot_url: key,
@@ -124,11 +138,26 @@ export class AppointmentsService {
   }
 
   async findOne(id: string, user: AuthUser) {
+    // withDoctor() is tenant-scoped, so reaching this point already proves the
+    // appointment belongs to the caller's clinic.
     const appointment = await this.withDoctor(id);
-    const screenshotUrl = await this.storage.presignedGetUrl(
-      appointment.payment_screenshot_url,
-    );
-    return { ...appointment.toJSON(), screenshot_url: screenshotUrl };
+    const [screenshotUrl, reports, patient] = await Promise.all([
+      this.storage.presignedGetUrl(appointment.payment_screenshot_url),
+      this.patients.reportsFor(appointment.id),
+      appointment.patient_id
+        ? this.patients.findById(appointment.patient_id)
+        : Promise.resolve(null),
+    ]);
+
+    return {
+      ...appointment.toJSON(),
+      screenshot_url: screenshotUrl,
+      // Registered demographics, so the doctor sees age/gender alongside the
+      // name captured at booking time.
+      patient_age: patient?.age ?? null,
+      patient_gender: patient?.gender ?? null,
+      reports,
+    };
   }
 
   async setConsultation(
@@ -198,13 +227,21 @@ export class AppointmentsService {
   }
 
   private async withDoctor(id: string): Promise<Appointment> {
-    return (await this.appointmentModel.findByPk(id, {
+    // The tenant hooks scope this query, so an appointment belonging to another
+    // clinic simply comes back null — which must read as "not found", not crash.
+    const appointment = (await this.appointmentModel.findByPk(id, {
       include: [
         {
           model: Doctor,
           attributes: ['id', 'name', 'specialization', 'consultation_fee'],
         },
       ],
-    })) as Appointment;
+    })) as Appointment | null;
+    if (!appointment) {
+      throw new AppException(ErrorCode.NOT_FOUND, {
+        message: 'Appointment not found.',
+      });
+    }
+    return appointment;
   }
 }

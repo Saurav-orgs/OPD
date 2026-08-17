@@ -6,6 +6,77 @@ import { useAuth } from '../auth/AuthContext';
 import { useToast } from '../components/Toast';
 import { Empty, Field, Loading } from '../components/ui';
 
+/**
+ * Shareable QR pointing at the doctor's public booking page. Distinct from the
+ * payment QR below, which is the UPI code patients scan to pay.
+ */
+function BookingQrCard() {
+  const qrQ = useQuery({ queryKey: ['booking-qr'], queryFn: doctorsApi.myBookingQr });
+  const [copied, setCopied] = useState(false);
+
+  if (qrQ.isLoading) return <div className="card"><Loading /></div>;
+  if (qrQ.error || !qrQ.data) return null;
+
+  const { url, qr_data_url, share_text } = qrQ.data;
+  const waHref = `https://wa.me/?text=${encodeURIComponent(share_text)}`;
+
+  return (
+    <div className="card">
+      <div className="card-title">Share your booking link</div>
+      <p className="muted" style={{ marginBottom: 12 }}>
+        Patients scan this to open your booking page.
+      </p>
+
+      <img
+        src={qr_data_url}
+        alt="Booking QR code"
+        style={{
+          width: '100%',
+          maxWidth: 220,
+          display: 'block',
+          margin: '0 auto 12px',
+          borderRadius: 8,
+          border: 'var(--hairline)',
+        }}
+      />
+
+      <code
+        style={{
+          display: 'block',
+          padding: '6px 10px',
+          background: 'var(--surface)',
+          borderRadius: 6,
+          fontSize: 12,
+          wordBreak: 'break-all',
+          marginBottom: 10,
+        }}
+      >
+        {url}
+      </code>
+
+      <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+        <a className="btn btn-sm" href={qr_data_url} download="booking-qr.png">
+          Download QR
+        </a>
+        <a className="btn btn-sm btn-primary" href={waHref} target="_blank" rel="noreferrer">
+          Share on WhatsApp
+        </a>
+        <button
+          className="btn btn-sm"
+          onClick={() => {
+            navigator.clipboard.writeText(url).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            });
+          }}
+        >
+          {copied ? 'Copied!' : 'Copy link'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Doctor self-service — edits are permission-gated server-side (doctors:update). */
 export default function Profile() {
   const { user, can } = useAuth();
@@ -103,6 +174,8 @@ export default function Profile() {
         </div>
 
         <div className="stack">
+          <BookingQrCard />
+
           {meQ.data && can('opd_schedules', 'read') && (
             <div className="card">
               <div className="card-title">OPD schedule</div>

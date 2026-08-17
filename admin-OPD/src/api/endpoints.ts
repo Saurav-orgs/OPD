@@ -2,6 +2,7 @@ import api from './client';
 import type {
   Appointment,
   AuthUser,
+  BookingQr,
   DashboardSummary,
   DaySlots,
   Doctor,
@@ -89,8 +90,11 @@ export const doctorsApi = {
     api.patch<Doctor>(`/doctors/${id}/disable`).then((r) => r.data),
   uploadQr: (id: string, file: File) => upload(`/doctors/${id}/qr`, file),
   uploadPhoto: (id: string, file: File) => upload(`/doctors/${id}/photo`, file),
+  bookingQr: (id: string) =>
+    api.get<BookingQr>(`/doctors/${id}/booking-qr`).then((r) => r.data),
   // Doctor self-service
   me: () => api.get<Doctor>('/doctors/me').then((r) => r.data),
+  myBookingQr: () => api.get<BookingQr>('/doctors/me/booking-qr').then((r) => r.data),
   updateMe: (body: Partial<Doctor>) =>
     api.patch<Doctor>('/doctors/me', body).then((r) => r.data),
   uploadMyQr: (file: File) => upload('/doctors/me/qr', file),

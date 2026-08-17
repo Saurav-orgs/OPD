@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../api/api_client.dart';
 import '../api/models.dart';
 import '../config.dart';
+import '../auth/patient_auth.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
 import 'confirmation_screen.dart';
@@ -31,6 +32,20 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
   final _name = TextEditingController();
   final _address = TextEditingController();
   final _description = TextEditingController();
+  bool _prefilled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Prefill from the signed-in patient so returning users don't retype.
+    if (_prefilled) return;
+    final p = PatientAuthScope.of(context).patient;
+    if (p != null) {
+      if (_name.text.isEmpty) _name.text = p.name;
+      if (_mobile.text.isEmpty) _mobile.text = p.mobile;
+    }
+    _prefilled = true;
+  }
 
   File? _screenshot;
   bool _submitting = false;

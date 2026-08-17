@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { usePatientAuth } from '../auth/PatientAuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -33,8 +34,10 @@ export const BookingForm: React.FC = () => {
   const date = state?.date;
   const slot = state?.slot;
 
-  const [mobile, setMobile] = useState('');
-  const [name, setName] = useState('');
+  // Prefill from the signed-in patient so returning users don't retype details.
+  const { patient } = usePatientAuth();
+  const [mobile, setMobile] = useState(patient?.mobile ?? '');
+  const [name, setName] = useState(patient?.name ?? '');
   const [address, setAddress] = useState('');
   const [description, setDescription] = useState('');
 

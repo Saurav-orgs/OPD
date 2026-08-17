@@ -1,3 +1,12 @@
+export interface Clinic {
+  id: string;
+  name: string;
+  slug: string;
+  logoUrl?: string | null;
+  address?: string | null;
+  contactPhone?: string | null;
+}
+
 export interface Doctor {
   id: string;
   name: string;
@@ -12,6 +21,42 @@ export interface Doctor {
   payment_qr_url?: string | null;
   publicSlug: string;
   public_slug?: string | null;
+  /** Which practice this doctor belongs to (multi-tenant). */
+  clinic?: Clinic | null;
+}
+
+export type Gender = 'male' | 'female' | 'other';
+
+export interface Patient {
+  id: string;
+  mobile: string;
+  name: string;
+  age: number | null;
+  gender: Gender | null;
+}
+
+export interface PatientReport {
+  id: string;
+  fileName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string | null;
+  viewUrl: string | null;
+}
+
+export interface PatientAppointment {
+  id: string;
+  appointmentDate: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  consultationStatus: string;
+  paymentStatus: string;
+  description?: string | null;
+  doctorNotes?: string | null;
+  doctor: { id: string; name: string; specialization?: string | null; publicSlug?: string } | null;
+  clinic: { id: string; name: string; slug: string } | null;
+  reports?: PatientReport[];
 }
 
 export type SlotStatus = 'available' | 'booked' | 'past';

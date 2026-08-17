@@ -6,7 +6,10 @@ import { User } from './user.model';
 import { Doctor } from './doctor.model';
 import { OpdSchedule } from './opd-schedule.model';
 import { ScheduleException } from './schedule-exception.model';
+import { Patient } from './patient.model';
+import { PatientOtp } from './patient-otp.model';
 import { Appointment } from './appointment.model';
+import { PatientReport } from './patient-report.model';
 
 export const models = [
   Tenant,
@@ -17,7 +20,10 @@ export const models = [
   Doctor,
   OpdSchedule,
   ScheduleException,
+  Patient,
+  PatientOtp,
   Appointment,
+  PatientReport,
 ];
 
 export {
@@ -29,5 +35,8 @@ export {
   Doctor,
   OpdSchedule,
   ScheduleException,
+  Patient,
+  PatientOtp,
   Appointment,
+  PatientReport,
 };

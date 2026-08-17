@@ -52,6 +52,13 @@ export enum BookingSource {
   WEB = 'web',
 }
 
+/** patients.gender — collected at registration, reused on prescriptions. */
+export enum Gender {
+  MALE = 'male',
+  FEMALE = 'female',
+  OTHER = 'other',
+}
+
 /** schedule_exceptions.type */
 export enum ScheduleExceptionType {
   LEAVE = 'leave',

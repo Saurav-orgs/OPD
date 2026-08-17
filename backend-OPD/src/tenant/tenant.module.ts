@@ -9,6 +9,7 @@ import { RolePermission } from '../database/models/role-permission.model';
 import { OpdSchedule } from '../database/models/opd-schedule.model';
 import { ScheduleException } from '../database/models/schedule-exception.model';
 import { Appointment } from '../database/models/appointment.model';
+import { PatientReport } from '../database/models/patient-report.model';
 import { TenantInterceptor } from './tenant.interceptor';
 import { registerTenantHooks } from './tenant-hooks';
 import { TenantSettingsController } from './tenant-settings.controller';
@@ -17,12 +18,20 @@ import { RegistrationService } from './registration.service';
 import { UploadsModule } from '../uploads/uploads.module';
 
 // Registers Sequelize hooks after the SequelizeModule has initialized all models.
+// Patients and patient OTPs are deliberately absent: those are global identities,
+// not tenant-owned rows. Only what hangs off a patient is tenant-scoped.
 @Injectable()
 class TenantHooksInit implements OnModuleInit {
   onModuleInit() {
-    [Doctor, User, Role, OpdSchedule, ScheduleException, Appointment].forEach(
-      (model) => registerTenantHooks(model as any),
-    );
+    [
+      Doctor,
+      User,
+      Role,
+      OpdSchedule,
+      ScheduleException,
+      Appointment,
+      PatientReport,
+    ].forEach((model) => registerTenantHooks(model as any));
   }
 }
 

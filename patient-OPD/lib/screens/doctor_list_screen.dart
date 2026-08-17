@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import '../api/api_client.dart';
 import '../api/models.dart';
+import '../auth/patient_auth.dart';
 import '../theme.dart';
 import '../widgets/common.dart';
+import 'complete_profile_screen.dart';
 import 'doctor_detail_screen.dart';
+import 'my_appointments_screen.dart';
+import 'patient_login_screen.dart';
 
 class DoctorListScreen extends StatefulWidget {
   const DoctorListScreen({super.key});
@@ -71,6 +75,7 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = PatientAuthScope.of(context);
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -80,6 +85,20 @@ class _DoctorListScreenState extends State<DoctorListScreen> {
             Expanded(child: _list()),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => auth.isAuthenticated && auth.isProfileComplete
+                ? const MyAppointmentsScreen()
+                : auth.isAuthenticated
+                    ? const CompleteProfileScreen()
+                    : const PatientLoginScreen(),
+          ),
+        ),
+        icon: const Icon(Icons.event_note_outlined),
+        label: Text(auth.isAuthenticated ? 'My visits' : 'Sign in'),
       ),
     );
   }
@@ -261,6 +280,24 @@ class _DoctorCard extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                               color: AppColors.textSecondary, fontSize: 12)),
+                    ],
+                    if (doctor.clinic != null) ...[
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          const Icon(Icons.business_outlined,
+                              size: 12, color: AppColors.textSecondary),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(doctor.clinic!.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12)),
+                          ),
+                        ],
+                      ),
                     ],
                     const SizedBox(height: 10),
                     Row(
